@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <!--font-->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap"
+      rel="stylesheet"
+    />
+    <!--tailwind-->
+    <link href="src/output.css" rel="stylesheet" />
+    <!--icons-->
+    <link
+      rel="stylesheet"
+      href="https://cdn-uicons.flaticon.com/4.0.0/uicons-regular-rounded/css/uicons-regular-rounded.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn-uicons.flaticon.com/4.0.0/uicons-bold-rounded/css/uicons-bold-rounded.css"
+    />
+  </head>
+  <body class="h-screen overflow-hidden">
+    <!--main container-->
+    <div class="h-screen bg-neutral-100 flex overflow-hidden">
+      <!--sidebar-->
+      <div class="flex flex-col bg-base-100 w-60 shadow-md z-10">
+        <div
+          class="h-16 flex items-center pl-8 border-b border-neutral-100 gap-1"
+        >
+          <i class="fi fi-br-e-learning pt-1 text-lg text-primary"></i>
+          <h1 class="font-black text-md uppercase">CPO Portal</h1>
+        </div>
+        <div class="mt-8">
+          <ul class="menu p-0 w-full space-y-2">
+            <li>
+              <a href="index.html" class="navItem navActive"
+                ><i class="fi fi-br-apps pt-1"></i>Dashboard</a
+              >
+            </li>
+            <li>
+              <a href="announcements.html" class="navItem"
+                ><i class="fi fi-br-megaphone-sound-waves pt-1"></i
+                >Announcements</a
+              >
+            </li>
+            <li>
+              <details>
+                <summary class="navItem">
+                  <i class="fi fi-br-inventory-alt pt-1"></i>Schedule
+                </summary>
+                <div class="bg-neutral-100 py-4">
+                  <li>
+                    <a href="schedule-calendar.html" class="navItemSub"
+                      >Calendar</a
+                    >
+                  </li>
+                  <li>
+                    <a href="schedule-shifts.html" class="navItemSub"
+                      >Scheduled Shifts</a
+                    >
+                  </li>
+                </div>
+              </details>
+            </li>
+            <li>
+              <a class="navItem"
+                ><i class="fi fi-br-users pt-1"></i>Employees</a
+              >
+            </li>
+            <li>
+              <details>
+                <summary class="navItem">
+                  <i class="fi fi-br-inventory-alt pt-1"></i>Inventory
+                </summary>
+                <div class="bg-neutral-100 py-4">
+                  <li><a class="navItemSub">Active</a></li>
+                  <li><a class="navItemSub">Applicants</a></li>
+                </div>
+              </details>
+            </li>
+            <li>
+              <a class="navItem"
+                ><i class="fi fi-br-document pt-1"></i>Resources</a
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+      <!--right-->
+      <div class="flex-1 flex flex-col overflow-hidden">
+        <!--header-->
+        <div class="h-16 bg-base-100 flex items-center shadow-md px-8">
+          <div class="flex-1"></div>
+          <div>
+            <a class="btn btn-circle btn-sm bg-neutral-200 border-0 shadow-none"
+              ><i class="fi fi-br-bell pt-1 opacity-60"></i
+            ></a>
+          </div>
+          <div class="divider divider-horizontal px-4 opacity-20"></div>
+          <div class="flex items-center gap-4">
+            <div class="avatar">
+              <div class="w-8 rounded-full">
+                <img id="userAvatar" src="" />
+              </div>
+            </div>
+            <div class="flex flex-col">
+              <h1 id="userName" class="text-xs uppercase font-bold">
+                Username
+              </h1>
+              <h2 id="userRole" class="text-xs opacity-60 uppercase">Role</h2>
+            </div>
+            <i class="fi fi-br-angle-small-down pt-1 opacity-60"></i>
+          </div>
+        </div>
+        <!--content-->
+        <div class="p-8 overflow-y-auto">
+          <div
+            class="bg-base-100 shadow-md rounded-lg px-8 py-10 bg-linear-to-bl from-[#f3f520] to-[#4DB900] text-base-100 from-10% flex flex-col gap-2"
+          >
+            <h1 class="uppercase font-bold text-2xl">
+              Welcome, <span id="display_name">Username</span>
+            </h1>
+            <h2 class="font-semibold uppercase text-sm">
+              Access Workstudy Scheduling, Inventory Management and more
+            </h2>
+          </div>
+          <div class="grid grid-cols-[2fr_1fr] gap-8 mt-8">
+            <!--left column-->
+            <div class="flex flex-col gap-8 min-w-0">
+              <!--stats-->
+              <div class="stats shadow-md">
+                <div class="stat bg-base-100">
+                  <div class="stat-title uppercase">Active Workstudies</div>
+                  <div id="activeWorkstudiesCount" class="stat-value text-4xl">
+                    00
+                  </div>
+                </div>
+                <div class="stat bg-base-100">
+                  <div class="stat-title uppercase">Current Applicants</div>
+                  <div id="applicantsCount" class="stat-value text-4xl">00</div>
+                </div>
+                <div class="stat bg-base-100">
+                  <div class="stat-title uppercase">Low Stock Items</div>
+                  <div class="stat-value text-4xl">00</div>
+                </div>
+              </div>
+              <!--announcements card-->
+              <div class="bg-base-100 shadow-md rounded-lg flex flex-col">
+                <div
+                  class="flex items-center justify-between px-8 py-4 border-b border-neutral-100"
+                >
+                  <h1 class="text-md uppercase font-bold">
+                    Latest Announcements
+                  </h1>
+                  <a class="btn btn-xs btn-circle bg-primary text-base-100"
+                    >+</a
+                  >
+                </div>
+                <div
+                  id="announcementsList"
+                  class="px-8 py-4 flex flex-col"
+                ></div>
+                <div class="inset-shadow-sm px-8 py-4">
+                  <a
+                    href="announcements.html"
+                    class="text-xs font-bold uppercase text-primary"
+                    >View All</a
+                  >
+                </div>
+              </div>
+              <!--todays schedule card-->
+              <div class="bg-base-100 shadow-md rounded-lg flex flex-col">
+                <div
+                  class="flex items-center justify-between px-8 py-4 border-b border-neutral-100"
+                >
+                  <h1 class="text-md uppercase font-bold">Today's Schedule</h1>
+                  <a class="btn btn-xs btn-circle bg-primary text-base-100"
+                    >+</a
+                  >
+                </div>
+                <div class="flex flex-col">
+                  <!--schedule line item-->
+                  <div class="px-8 py-4 flex items-center gap-8">
+                    <span
+                      class="rounded-full bg-primary/10 size-10 flex items-center justify-center"
+                      ><i class="fi fi-br-sunrise-alt pt-1"></i
+                    ></span>
+                    <h1 class="text-sm uppercase font-bold">Employee Name</h1>
+                    <h1 class="text-sm opacity-60 flex-1">start-end time</h1>
+                    <span
+                      class="bg-primary text-base-100 px-4 py-1 rounded-full text-xs uppercase font-bold"
+                      >STATUS</span
+                    >
+                  </div>
+                </div>
+                <div class="inset-shadow-sm px-8 py-4">
+                  <a class="text-xs font-bold uppercase text-primary"
+                    >View Calendar</a
+                  >
+                </div>
+              </div>
+            </div>
+            <!--right column-->
+            <div>
+              <!--to do card-->
+              <div class="bg-base-100 shadow-md rounded-lg flex flex-col">
+                <div
+                  class="flex items-center justify-between px-8 py-4 border-b border-neutral-100"
+                >
+                  <h1 class="text-md uppercase font-bold">My To-Dos</h1>
+                  <a class="btn btn-xs btn-circle bg-primary text-base-100"
+                    >+</a
+                  >
+                </div>
+                <div class="flex flex-col">
+                  <!--to do line item-->
+                  <div class="px-8 py-4 flex items-center gap-4">
+                    <h1 class="uppercase font-bold text-sm flex-1">
+                      List Item
+                    </h1>
+                    <input
+                      type="checkbox"
+                      class="checkbox checkbox-sm rounded-full"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      const AIRTABLE_TOKEN =
+        "path5D1SLsZnikHyD.8e47f28d9b3b2913d1ebf07e9b1beb8c0903a82bb49266f19cb98fb4021b0129";
+      const BASE_ID = "appYqZMGk18beV4qI";
+      const USERS_TABLE = "Users";
+
+      const userId = localStorage.getItem("cpoUserId");
+
+      const avatarEl = document.getElementById("userAvatar");
+      const nameEl = document.getElementById("userName");
+      const roleEl = document.getElementById("userRole");
+
+      const displayNameSpan = document.getElementById("display_name");
+
+      const ACTIVE_WORKSTUDIES_TABLE = "Active Workstudies";
+      const activeWorkstudiesCountEl = document.getElementById(
+        "activeWorkstudiesCount",
+      );
+
+      const APPLICANTS_TABLE = "Applicants";
+      const applicantsCountEl = document.getElementById("applicantsCount");
+
+      const ANNOUNCEMENTS_TABLE = "Announcements";
+      const announcementsListEl = document.getElementById("announcementsList");
+
+      function formatAnnouncementDate(dateString) {
+        const date = new Date(dateString);
+        if (isNaN(date)) return "";
+
+        return date.toLocaleDateString("en-US", {
+          month: "2-digit",
+          day: "2-digit",
+          year: "2-digit",
+        });
+      }
+
+      async function loadAnnouncements() {
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          ANNOUNCEMENTS_TABLE,
+        )}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch announcements");
+        }
+
+        const data = await response.json();
+
+        // sort newest first by created_at
+        const sorted = data.records.sort((a, b) => {
+          return new Date(b.fields.created_at) - new Date(a.fields.created_at);
+        });
+
+        // take top 3
+        const topThree = sorted.slice(0, 3);
+
+        if (topThree.length === 0) {
+          announcementsListEl.innerHTML = `
+      <p class="text-xs uppercase opacity-60">No announcements</p>
+    `;
+          return;
+        }
+
+        announcementsListEl.innerHTML = topThree
+          .map((record) => {
+            const fields = record.fields;
+
+            return `
+        <div class="flex items-center gap-8 w-full">
+          <span class="rounded-full bg-primary/10 size-10 flex items-center justify-center">
+            <i class="fi fi-br-megaphone-sound-waves pt-1"></i>
+          </span>
+
+          <div class="flex flex-col gap-1 flex-1">
+            <h1 class="uppercase font-semibold text-sm">
+              ${fields.title || "Untitled"}
+            </h1>
+            <h2 class="text-xs opacity-60">
+              ${formatAnnouncementDate(fields.created_at)}
+            </h2>
+          </div>
+
+          <i class="fi fi-br-angle-small-right pt-1"></i>
+        </div>
+      `;
+          })
+          .join("");
+      }
+
+      async function loadApplicantsCount() {
+        const formula = `AND(
+    {status} != "Potential Applicant",
+    {status} != "Hired",
+    {status} != "Other",
+    {status} != "Not Moving Forward"
+  )`;
+
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          APPLICANTS_TABLE,
+        )}?filterByFormula=${encodeURIComponent(formula)}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch applicants");
+        }
+
+        const data = await response.json();
+        applicantsCountEl.textContent = data.records.length;
+      }
+
+      async function loadActiveWorkstudiesCount() {
+        const formula = `AND(
+    {status} != "Terminated - Graduated",
+    {status} != "Terminated - Involuntary"
+  )`;
+
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          ACTIVE_WORKSTUDIES_TABLE,
+        )}?filterByFormula=${encodeURIComponent(formula)}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch active workstudies");
+        }
+
+        const data = await response.json();
+        activeWorkstudiesCountEl.textContent = data.records.length;
+      }
+
+      async function fetchUser() {
+        if (!userId) {
+          window.location.href = "login.html"; // redirect if not logged in
+          return;
+        }
+
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          USERS_TABLE,
+        )}/${userId}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch user");
+        }
+
+        const data = await response.json();
+        return data.fields;
+      }
+
+      async function loadUserHeader() {
+        try {
+          const user = await fetchUser();
+
+          // avatar
+          avatarEl.src =
+            user.avatar_url ||
+            "https://img.daisyui.com/images/profile/demo/yellingcat@192.webp";
+
+          // name
+          nameEl.textContent = user.display_name || "User";
+
+          displayNameSpan.textContent = user.display_name || "User";
+
+          // role (linked field → array)
+          if (user.role && user.role.length > 0) {
+            roleEl.textContent = "Loading...";
+            await loadRoleName(user.role[0]);
+          } else {
+            roleEl.textContent = "Standard";
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      async function loadRoleName(roleRecordId) {
+        const url = `https://api.airtable.com/v0/${BASE_ID}/Roles/${roleRecordId}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) return;
+
+        const data = await response.json();
+        roleEl.textContent = data.fields.name || "Role";
+      }
+
+      loadUserHeader();
+      loadActiveWorkstudiesCount();
+      loadApplicantsCount();
+      loadAnnouncements();
+    </script>
+  </body>
+</html>

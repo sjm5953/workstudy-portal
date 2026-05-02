@@ -1,0 +1,71 @@
+@import "tailwindcss";
+@plugin "daisyui";
+
+@theme {
+  --font-gsf: "Google Sans Flex"; 
+}
+
+@plugin "daisyui/theme" {
+  name: "green";
+  default: true; /* set as default */
+  prefersdark: false; /* set as default dark mode (prefers-color-scheme:dark) */
+  color-scheme: light; /* color of browser-provided UI */
+
+  --color-primary: var(--color-lime-600);
+  --color-neutral: var(--color-neutral-800);
+}
+
+body {
+  font-family: var(--font-gsf);
+  color: var(--color-neutral);
+}
+
+.navItem {
+  padding: 8px 32px;
+  text-transform: uppercase;
+  display: flex;
+  gap: 8px;
+}
+
+.navItem:hover {
+  background-color: transparent;
+}
+
+.navItem:hover i {
+  color: var(--color-primary);
+}
+
+.navActive {
+  font-weight: 900;
+}
+
+.navActive i {
+  color: var(--color-primary);
+}
+
+.navItemSub {
+  padding: 8px 50px;
+  text-transform: uppercase;
+}
+
+.navSubActive {
+  font-weight: 900;
+  color: var(--color-primary);
+}
+
+.navItemSub:hover {
+  background-color: transparent;
+  color: var(--color-primary);
+}
+
+.stat {
+  padding: 24px 32px;
+}
+
+.stat-title {
+  font-weight: 700;  color: var(--color-primary);
+}
+
+.stat-value {
+  margin-top: 12px;
+}

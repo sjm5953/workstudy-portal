@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CPO Portal</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap"
+      rel="stylesheet"
+    />
+
+    <link href="src/output.css" rel="stylesheet" />
+
+    <link
+      rel="stylesheet"
+      href="https://cdn-uicons.flaticon.com/4.0.0/uicons-regular-rounded/css/uicons-regular-rounded.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn-uicons.flaticon.com/4.0.0/uicons-bold-rounded/css/uicons-bold-rounded.css"
+    />
+  </head>
+
+  <body class="bg-neutral-100 flex items-center justify-center h-screen">
+    <div
+      class="bg-base-100 rounded-xl shadow-md px-10 py-16 w-full max-w-md flex flex-col items-center"
+    >
+      <h1 class="font-black uppercase text-4xl">
+        <span class="text-primary">CPO</span> Portal
+      </h1>
+
+      <div
+        role="tablist"
+        class="tabs tabs-border w-full uppercase font-bold text-primary mt-4"
+      >
+        <button id="loginTab" role="tab" class="tab tab-active w-1/2">
+          Login
+        </button>
+        <button id="signupTab" role="tab" class="tab w-1/2">Signup</button>
+      </div>
+
+      <!-- login -->
+      <div id="loginForm" class="flex flex-col w-full mt-8 uppercase">
+        <label class="label font-bold text-sm">Email</label>
+        <input
+          id="loginEmail"
+          type="text"
+          class="input w-full h-12 rounded-lg"
+        />
+
+        <label class="label font-bold text-sm mt-4">Password</label>
+        <input
+          id="loginPassword"
+          type="password"
+          class="input w-full h-12 rounded-lg"
+        />
+
+        <button
+          id="loginBtn"
+          class="btn border-0 shadow-none bg-linear-to-bl from-[#f3f520] to-[#4DB900] mt-8 text-base-100 from-10% h-14 font-bold uppercase text-lg rounded-lg"
+        >
+          Login
+        </button>
+      </div>
+
+      <!-- signup -->
+      <div id="signupForm" class="hidden flex flex-col w-full mt-8 uppercase">
+        <label class="label font-bold text-sm">Email</label>
+        <input
+          id="signupEmail"
+          type="email"
+          class="input w-full h-12 rounded-lg"
+        />
+
+        <label class="label font-bold text-sm mt-4">Display Name</label>
+        <input
+          id="signupDisplayName"
+          type="text"
+          class="input w-full h-12 rounded-lg"
+        />
+
+        <label class="label font-bold text-sm mt-4">Password</label>
+        <input
+          id="signupPassword"
+          type="password"
+          class="input w-full h-12 rounded-lg"
+        />
+
+        <button
+          id="signupBtn"
+          class="btn border-0 shadow-none bg-linear-to-bl from-[#f3f520] to-[#4DB900] mt-8 text-base-100 from-10% h-14 font-bold uppercase text-lg rounded-lg"
+        >
+          Create Account
+        </button>
+      </div>
+
+      <p
+        id="authMessage"
+        class="text-xs uppercase font-bold opacity-60 mt-4"
+      ></p>
+    </div>
+
+    <script>
+      const AIRTABLE_TOKEN =
+        "path5D1SLsZnikHyD.8e47f28d9b3b2913d1ebf07e9b1beb8c0903a82bb49266f19cb98fb4021b0129";
+      const BASE_ID = "appYqZMGk18beV4qI";
+      const USERS_TABLE = "Users";
+
+      // Replace this with the actual Airtable record ID from your Roles table
+      const STANDARD_ROLE_ID = "recSTANDARDROLEID";
+
+      const loginTab = document.getElementById("loginTab");
+      const signupTab = document.getElementById("signupTab");
+      const loginForm = document.getElementById("loginForm");
+      const signupForm = document.getElementById("signupForm");
+      const authMessage = document.getElementById("authMessage");
+
+      const loginBtn = document.getElementById("loginBtn");
+      const signupBtn = document.getElementById("signupBtn");
+
+      function showLogin() {
+        loginForm.classList.remove("hidden");
+        signupForm.classList.add("hidden");
+
+        loginTab.classList.add("tab-active");
+        signupTab.classList.remove("tab-active");
+
+        authMessage.textContent = "";
+      }
+
+      function showSignup() {
+        signupForm.classList.remove("hidden");
+        loginForm.classList.add("hidden");
+
+        signupTab.classList.add("tab-active");
+        loginTab.classList.remove("tab-active");
+
+        authMessage.textContent = "";
+      }
+
+      loginTab.addEventListener("click", showLogin);
+      signupTab.addEventListener("click", showSignup);
+
+      async function createUser({ email, displayName, password }) {
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          USERS_TABLE,
+        )}`;
+
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            fields: {
+              email: email,
+              display_name: displayName,
+              password: password,
+
+              // Linked record fields must be arrays of Airtable record IDs
+              role: [STANDARD_ROLE_ID],
+            },
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(errorText);
+          throw new Error("Could not create user.");
+        }
+
+        return response.json();
+      }
+
+      signupBtn.addEventListener("click", async () => {
+        const email = document.getElementById("signupEmail").value.trim();
+        const displayName = document
+          .getElementById("signupDisplayName")
+          .value.trim();
+        const password = document.getElementById("signupPassword").value.trim();
+
+        if (!email || !displayName || !password) {
+          authMessage.textContent = "Please fill out all signup fields.";
+          return;
+        }
+
+        signupBtn.disabled = true;
+        signupBtn.textContent = "Creating...";
+
+        try {
+          await createUser({ email, displayName, password });
+
+          authMessage.textContent = "Account created. You can now log in.";
+          signupBtn.textContent = "Create Account";
+          signupBtn.disabled = false;
+          showLogin();
+        } catch (error) {
+          console.error(error);
+          authMessage.textContent =
+            "Something went wrong creating the account.";
+          signupBtn.textContent = "Create Account";
+          signupBtn.disabled = false;
+        }
+      });
+
+      loginBtn.addEventListener("click", async () => {
+        const email = document.getElementById("loginEmail").value.trim();
+        const password = document.getElementById("loginPassword").value.trim();
+
+        if (!email || !password) {
+          authMessage.textContent = "Please enter your email and password.";
+          return;
+        }
+
+        loginBtn.disabled = true;
+        loginBtn.textContent = "Logging in...";
+
+        try {
+          const user = await findUserByLogin(email, password);
+
+          if (!user) {
+            authMessage.textContent = "Invalid email or password.";
+            loginBtn.disabled = false;
+            loginBtn.textContent = "Login";
+            return;
+          }
+
+          localStorage.setItem("cpoUserId", user.id);
+          localStorage.setItem("cpoUserEmail", user.fields.email);
+          localStorage.setItem(
+            "cpoDisplayName",
+            user.fields.display_name || "",
+          );
+
+          window.location.href = "index.html";
+        } catch (error) {
+          console.error(error);
+          authMessage.textContent = "Something went wrong logging in.";
+          loginBtn.disabled = false;
+          loginBtn.textContent = "Login";
+        }
+      });
+
+      async function findUserByLogin(email, password) {
+        const formula = `AND(
+    LOWER({email}) = "${email.toLowerCase()}",
+    {password} = "${password}"
+  )`;
+
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          USERS_TABLE,
+        )}?filterByFormula=${encodeURIComponent(formula)}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Could not check login.");
+        }
+
+        const data = await response.json();
+        return data.records[0];
+      }
+    </script>
+  </body>
+</html>

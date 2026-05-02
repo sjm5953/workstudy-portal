@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CPO Portal</title>
+
+    <!-- fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- tailwind -->
+    <link href="src/output.css" rel="stylesheet" />
+
+    <!-- icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdn-uicons.flaticon.com/4.0.0/uicons-regular-rounded/css/uicons-regular-rounded.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn-uicons.flaticon.com/4.0.0/uicons-bold-rounded/css/uicons-bold-rounded.css"
+    />
+  </head>
+
+  <body class="h-screen overflow-hidden font-[Google_Sans_Flex]">
+    <!-- main container -->
+    <div class="h-screen bg-neutral-100 flex overflow-hidden">
+      <!-- SIDEBAR -->
+      <div class="flex flex-col bg-base-100 w-60 shadow-md z-10">
+        <div
+          class="h-16 flex items-center pl-8 border-b border-neutral-100 gap-1"
+        >
+          <i class="fi fi-br-e-learning pt-1 text-lg text-primary"></i>
+          <h1 class="font-black text-md uppercase">CPO Portal</h1>
+        </div>
+
+        <div class="mt-8">
+          <ul class="menu p-0 w-full space-y-2">
+            <li>
+              <a href="#" class="navItem">
+                <i class="fi fi-br-apps pt-1"></i>Dashboard
+              </a>
+            </li>
+            <li>
+              <a href="#" class="navItem">
+                <i class="fi fi-br-megaphone-sound-waves pt-1"></i>Announcements
+              </a>
+            </li>
+            <li>
+              <a href="#" class="navItem">
+                <i class="fi fi-br-inventory-alt pt-1"></i>Schedule
+              </a>
+            </li>
+            <li>
+              <a href="#" class="navItem">
+                <i class="fi fi-br-users pt-1"></i>Employees
+              </a>
+            </li>
+            <li>
+              <a href="#" class="navItem">
+                <i class="fi fi-br-document pt-1"></i>Resources
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- RIGHT SIDE -->
+      <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- HEADER -->
+        <div class="h-16 bg-base-100 flex items-center shadow-md px-8">
+          <div class="flex-1"></div>
+
+          <a class="btn btn-circle btn-sm bg-neutral-200 border-0 shadow-none">
+            <i class="fi fi-br-bell pt-1 opacity-60"></i>
+          </a>
+
+          <div class="divider divider-horizontal px-4 opacity-20"></div>
+
+          <!-- USER -->
+          <div class="flex items-center gap-4">
+            <div class="avatar">
+              <div class="w-8 rounded-full">
+                <img id="userAvatar" src="" />
+              </div>
+            </div>
+
+            <div class="flex flex-col">
+              <h1 id="userName" class="text-xs uppercase font-bold">
+                Loading...
+              </h1>
+              <h2 id="userRole" class="text-xs opacity-60 uppercase">
+                Loading...
+              </h2>
+            </div>
+
+            <i class="fi fi-br-angle-small-down pt-1 opacity-60"></i>
+          </div>
+        </div>
+
+        <!-- CONTENT -->
+        <div class="p-8 overflow-y-auto">
+          <!-- GREEN TITLE BAR -->
+          <div
+            class="bg-base-100 shadow-md rounded-lg px-8 py-4 bg-linear-to-bl from-[#f3f520] to-[#4DB900] text-base-100 flex items-center justify-between"
+          >
+            <h1 class="uppercase font-black text-2xl">Page Title</h1>
+
+            <button
+              class="btn rounded-full bg-base-100 text-neutral-600 text-xs shadow-none border-0 uppercase font-bold"
+            >
+              + Action
+            </button>
+          </div>
+
+          <!-- PAGE CONTENT PLACEHOLDER -->
+          <div class="mt-8">
+            <div class="bg-base-100 rounded-lg shadow-md p-8">
+              <p class="uppercase text-sm opacity-60">Page content goes here</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCRIPT -->
+    <script>
+      const AIRTABLE_TOKEN = "YOUR_TOKEN_HERE";
+      const BASE_ID = "YOUR_BASE_ID";
+
+      const USERS_TABLE = "Users";
+      const ROLES_TABLE = "Roles";
+
+      const userId = localStorage.getItem("cpoUserId");
+
+      const avatarEl = document.getElementById("userAvatar");
+      const nameEl = document.getElementById("userName");
+      const roleEl = document.getElementById("userRole");
+
+      async function fetchUser() {
+        if (!userId) {
+          window.location.href = "login.html";
+          return;
+        }
+
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${USERS_TABLE}/${userId}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch user");
+        }
+
+        const data = await response.json();
+        return data.fields;
+      }
+
+      async function fetchRole(roleId) {
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${ROLES_TABLE}/${roleId}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) return "Role";
+
+        const data = await response.json();
+        return data.fields.name || "Role";
+      }
+
+      async function loadUserHeader() {
+        try {
+          const user = await fetchUser();
+
+          avatarEl.src =
+            user.avatar_url ||
+            "https://img.daisyui.com/images/profile/demo/yellingcat@192.webp";
+
+          nameEl.textContent = user.display_name || "User";
+
+          if (user.role && user.role.length > 0) {
+            roleEl.textContent = await fetchRole(user.role[0]);
+          } else {
+            roleEl.textContent = "Standard";
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      loadUserHeader();
+    </script>
+  </body>
+</html>

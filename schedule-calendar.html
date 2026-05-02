@@ -1,0 +1,975 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <!--font-->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap"
+      rel="stylesheet"
+    />
+    <!--tailwind-->
+    <link href="src/output.css" rel="stylesheet" />
+    <!--icons-->
+    <link
+      rel="stylesheet"
+      href="https://cdn-uicons.flaticon.com/4.0.0/uicons-regular-rounded/css/uicons-regular-rounded.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn-uicons.flaticon.com/4.0.0/uicons-bold-rounded/css/uicons-bold-rounded.css"
+    />
+  </head>
+  <body class="h-screen overflow-hidden">
+    <!--main container-->
+    <div class="h-screen bg-neutral-100 flex overflow-hidden">
+      <!--sidebar-->
+      <div class="flex flex-col bg-base-100 w-60 shadow-md z-10">
+        <div
+          class="h-16 flex items-center pl-8 border-b border-neutral-100 gap-1"
+        >
+          <i class="fi fi-br-e-learning pt-1 text-lg text-primary"></i>
+          <h1 class="font-black text-md uppercase">CPO Portal</h1>
+        </div>
+        <div class="mt-8">
+          <ul class="menu p-0 w-full space-y-2">
+            <li>
+              <a href="index.html" class="navItem"
+                ><i class="fi fi-br-apps pt-1"></i>Dashboard</a
+              >
+            </li>
+            <li>
+              <a href="announcements.html" class="navItem"
+                ><i class="fi fi-br-megaphone-sound-waves pt-1"></i
+                >Announcements</a
+              >
+            </li>
+            <li>
+              <details open>
+                <summary class="navItem">
+                  <i class="fi fi-br-inventory-alt pt-1"></i>Schedule
+                </summary>
+                <div class="bg-neutral-100 py-4">
+                  <li>
+                    <a
+                      href="schedule-calendar.html"
+                      class="navItemSub navSubActive"
+                      >Calendar</a
+                    >
+                  </li>
+                  <li>
+                    <a href="schedule-shifts.html" class="navItemSub"
+                      >Scheduled Shifts</a
+                    >
+                  </li>
+                </div>
+              </details>
+            </li>
+            <li>
+              <a class="navItem"
+                ><i class="fi fi-br-users pt-1"></i>Employees</a
+              >
+            </li>
+            <li>
+              <details>
+                <summary class="navItem">
+                  <i class="fi fi-br-inventory-alt pt-1"></i>Inventory
+                </summary>
+                <div class="bg-neutral-100 py-4">
+                  <li><a class="navItemSub">Active</a></li>
+                  <li><a class="navItemSub">Applicants</a></li>
+                </div>
+              </details>
+            </li>
+            <li>
+              <a class="navItem"
+                ><i class="fi fi-br-document pt-1"></i>Resources</a
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+      <!--right-->
+      <div class="flex-1 flex flex-col overflow-hidden">
+        <!--header-->
+        <div class="h-16 bg-base-100 flex items-center shadow-md px-8">
+          <div class="flex-1"></div>
+          <div>
+            <a class="btn btn-circle btn-sm bg-neutral-200 border-0 shadow-none"
+              ><i class="fi fi-br-bell pt-1 opacity-60"></i
+            ></a>
+          </div>
+          <div class="divider divider-horizontal px-4 opacity-20"></div>
+          <div class="flex items-center gap-4">
+            <div class="avatar">
+              <div class="w-8 rounded-full">
+                <img id="userAvatar" src="" />
+              </div>
+            </div>
+            <div class="flex flex-col">
+              <h1 id="userName" class="text-xs uppercase font-bold">
+                Username
+              </h1>
+              <h2 id="userRole" class="text-xs opacity-60 uppercase">Role</h2>
+            </div>
+            <i class="fi fi-br-angle-small-down pt-1 opacity-60"></i>
+          </div>
+        </div>
+        <!--content-->
+        <div class="overflow-y-auto flex flex-col flex-1">
+          <div
+            class="bg-base-100 shadow-md rounded-lg px-8 py-4 bg-linear-to-bl from-[#f3f520] to-[#4DB900] text-base-100 from-10% flex items-center justify-between mx-8 mt-8"
+          >
+            <h1 class="uppercase font-black text-2xl">Calendar</h1>
+          </div>
+          <div class="mt-4 flex-1 bg-base-100 mx-8 rounded-lg shadow-md">
+            <!--calendar-->
+            <div class="bg-base-100 rounded-lg overflow-hidden">
+              <div
+                class="px-6 py-4 border-b border-neutral-200 flex items-center gap-4"
+              >
+                <button
+                  id="prevDayBtn"
+                  class="btn btn-sm btn-circle bg-neutral-100 border-0 shadow-none"
+                >
+                  ←
+                </button>
+
+                <h2
+                  id="currentDayLabel"
+                  class="font-black uppercase text-lg flex-1"
+                >
+                  Loading...
+                </h2>
+
+                <button id="todayBtn" class="btn btn-sm rounded-full">
+                  Today
+                </button>
+
+                <button
+                  id="nextDayBtn"
+                  class="btn btn-sm btn-circle bg-neutral-100 border-0 shadow-none"
+                >
+                  →
+                </button>
+              </div>
+
+              <div class="overflow-x-auto">
+                <div id="scheduleCalendar" class="min-w-[1600px]"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <dialog id="newShiftModal" class="modal">
+      <div class="modal-box">
+        <h3 class="font-black text-2xl uppercase">New Shift</h3>
+
+        <div class="mt-4 flex flex-col gap-4">
+          <div>
+            <label class="label font-bold uppercase text-xs">Workstudy</label>
+            <select
+              id="newShiftWorkstudy"
+              class="select select-bordered w-full"
+            ></select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="label font-bold uppercase text-xs">Start</label>
+              <input
+                id="newShiftStart"
+                type="datetime-local"
+                class="input w-full"
+              />
+            </div>
+
+            <div>
+              <label class="label font-bold uppercase text-xs">End</label>
+              <input
+                id="newShiftEnd"
+                type="datetime-local"
+                class="input w-full"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="label font-bold uppercase text-xs">Status</label>
+            <select id="newShiftStatus" class="select select-bordered w-full">
+              <option value="Unconfirmed">Unconfirmed</option>
+              <option value="Confirmed">Confirmed</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="label font-bold uppercase text-xs">Notes</label>
+            <textarea
+              id="newShiftNotes"
+              class="textarea textarea-bordered w-full"
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="modal-action">
+          <button id="cancelNewShiftBtn" class="btn">Cancel</button>
+          <button id="saveNewShiftBtn" class="btn bg-neutral text-base-100">
+            Save Shift
+          </button>
+        </div>
+      </div>
+    </dialog>
+    <div
+      id="draftContextMenu"
+      class="hidden fixed z-50 bg-base-100 rounded-lg shadow-xl border border-neutral-200 overflow-hidden min-w-44"
+    >
+      <div class="px-4 py-3 border-b border-neutral-200">
+        <h1 class="text-xs font-black uppercase opacity-60">Quick Add</h1>
+      </div>
+
+      <button
+        data-shift-template="morning"
+        class="quick-shift-option block w-full px-4 py-3 text-left text-xs font-bold uppercase hover:bg-neutral-100"
+      >
+        Morning
+      </button>
+
+      <button
+        data-shift-template="afternoon"
+        class="quick-shift-option block w-full px-4 py-3 text-left text-xs font-bold uppercase hover:bg-neutral-100"
+      >
+        Afternoon
+      </button>
+
+      <button
+        data-shift-template="evening"
+        class="quick-shift-option block w-full px-4 py-3 text-left text-xs font-bold uppercase hover:bg-neutral-100"
+      >
+        Evening
+      </button>
+    </div>
+    <script>
+      const AIRTABLE_TOKEN =
+        "path5D1SLsZnikHyD.8e47f28d9b3b2913d1ebf07e9b1beb8c0903a82bb49266f19cb98fb4021b0129";
+      const BASE_ID = "appYqZMGk18beV4qI";
+      const SCHEDULE_TABLE = "Schedule";
+
+      const calendarEl = document.getElementById("scheduleCalendar");
+      const currentDayLabel = document.getElementById("currentDayLabel");
+      const prevDayBtn = document.getElementById("prevDayBtn");
+      const nextDayBtn = document.getElementById("nextDayBtn");
+      const todayBtn = document.getElementById("todayBtn");
+
+      let viewedDate = new Date();
+      viewedDate.setHours(0, 0, 0, 0);
+
+      const startHour = 7;
+      const endHour = 20;
+      const slotMinutes = 30;
+      const labelColWidth = 0;
+      const slotWidth = 64;
+
+      const ACTIVE_WORKSTUDIES_TABLE = "Active Workstudies";
+      const newShiftModal = document.getElementById("newShiftModal");
+      const newShiftWorkstudy = document.getElementById("newShiftWorkstudy");
+      const newShiftStart = document.getElementById("newShiftStart");
+      const newShiftEnd = document.getElementById("newShiftEnd");
+      const newShiftStatus = document.getElementById("newShiftStatus");
+      const newShiftNotes = document.getElementById("newShiftNotes");
+      const cancelNewShiftBtn = document.getElementById("cancelNewShiftBtn");
+      const saveNewShiftBtn = document.getElementById("saveNewShiftBtn");
+      let activeWorkstudyRecords = [];
+      let dragStartX = null;
+      let dragEndX = null;
+
+      const draftContextMenu = document.getElementById("draftContextMenu");
+
+      const USERS_TABLE = "Users";
+      const userId = localStorage.getItem("cpoUserId");
+      const avatarEl = document.getElementById("userAvatar");
+      const nameEl = document.getElementById("userName");
+      const roleEl = document.getElementById("userRole");
+
+      function showDraftContextMenu(event, draftRow) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        dragStartX = null;
+        dragEndX = null;
+        resetDraftPreview();
+
+        draftContextMenu.style.left = `${event.clientX}px`;
+        draftContextMenu.style.top = `${event.clientY}px`;
+        draftContextMenu.classList.remove("hidden");
+      }
+
+      function hideDraftContextMenu() {
+        draftContextMenu.classList.add("hidden");
+      }
+
+      function resetDraftPreview() {
+        const preview = document.getElementById("draftShiftPreview");
+        const previewText = document.getElementById("draftShiftPreviewText");
+
+        if (preview) {
+          preview.classList.add("hidden");
+          preview.classList.remove("flex");
+          preview.style.left = "0px";
+          preview.style.width = "0px";
+        }
+
+        if (previewText) {
+          previewText.textContent = "New Shift";
+        }
+
+        dragStartX = null;
+        dragEndX = null;
+      }
+
+      function formatDateForAirtable(date) {
+        return date.toISOString().split("T")[0];
+      }
+
+      function formatDayLabel(date) {
+        return date.toLocaleDateString("en-US", {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        });
+      }
+
+      function formatTimeLabel(hour, minute) {
+        const date = new Date();
+        date.setHours(hour, minute, 0, 0);
+
+        return date.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+        });
+      }
+
+      function formatShiftTime(dateString) {
+        const date = new Date(dateString);
+
+        return date.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+        });
+      }
+
+      function getMinutesFromStart(dateString) {
+        const date = new Date(dateString);
+        return (date.getHours() - startHour) * 60 + date.getMinutes();
+      }
+
+      function getSlots() {
+        const slots = [];
+
+        for (let hour = startHour; hour <= endHour; hour++) {
+          for (let minute of [0, 30]) {
+            if (hour === endHour && minute > 0) continue;
+
+            slots.push({
+              hour,
+              minute,
+              label: formatTimeLabel(hour, minute),
+            });
+          }
+        }
+
+        return slots;
+      }
+
+      async function fetchScheduleRecords() {
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          SCHEDULE_TABLE,
+        )}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch schedule records.");
+        }
+
+        const data = await response.json();
+        return data.records;
+      }
+
+      function getWorkstudyName(fields, workstudyMap) {
+        const linkedIds = fields.workstudy_name;
+
+        if (!Array.isArray(linkedIds) || linkedIds.length === 0) {
+          return "Unassigned";
+        }
+
+        return linkedIds.map((id) => workstudyMap[id] || "Unknown").join(", ");
+      }
+
+      async function fetchActiveWorkstudiesMap() {
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          ACTIVE_WORKSTUDIES_TABLE,
+        )}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch active workstudies.");
+        }
+
+        const data = await response.json();
+
+        activeWorkstudyRecords = data.records;
+
+        const map = {};
+
+        data.records.forEach((record) => {
+          map[record.id] = record.fields.Name || "Unnamed";
+        });
+
+        return map;
+      }
+
+      function dateToLocalInputValue(date) {
+        const offset = date.getTimezoneOffset();
+        const localDate = new Date(date.getTime() - offset * 60000);
+        return localDate.toISOString().slice(0, 16);
+      }
+
+      function roundToNearestSlot(minutes) {
+        return Math.round(minutes / slotMinutes) * slotMinutes;
+      }
+
+      function minutesToDate(minutesFromStart) {
+        const date = new Date(viewedDate);
+        date.setHours(startHour, 0, 0, 0);
+        date.setMinutes(date.getMinutes() + minutesFromStart);
+        return date;
+      }
+
+      function xToMinutes(x) {
+        const rawSlot = x / slotWidth;
+        const rawMinutes = rawSlot * slotMinutes;
+
+        const rounded = roundToNearestSlot(rawMinutes);
+
+        const maxMinutes = (endHour - startHour) * 60;
+
+        return Math.max(0, Math.min(rounded, maxMinutes));
+      }
+
+      function populateWorkstudySelect() {
+        const sortedWorkstudies = [...activeWorkstudyRecords].sort((a, b) => {
+          const nameA = a.fields.Name || "";
+
+          const nameB = b.fields.Name || "";
+
+          return nameA.localeCompare(nameB);
+        });
+
+        newShiftWorkstudy.innerHTML = sortedWorkstudies
+
+          .map((record) => {
+            return `
+
+        <option value="${record.id}">
+
+          ${record.fields.Name || "Unnamed"}
+
+        </option>
+
+      `;
+          })
+
+          .join("");
+      }
+
+      async function createShiftRecord() {
+        const workstudyId = newShiftWorkstudy.value;
+
+        const startDate = new Date(newShiftStart.value);
+        const endDate = new Date(newShiftEnd.value);
+
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          SCHEDULE_TABLE,
+        )}`;
+
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            fields: {
+              workstudy_name: [workstudyId],
+              shift_start: startDate.toISOString(),
+              shift_end: endDate.toISOString(),
+              shift_status: newShiftStatus.value,
+              notes: newShiftNotes.value.trim(),
+            },
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(errorText);
+          throw new Error("Failed to create shift.");
+        }
+
+        return response.json();
+      }
+
+      function setupDraftShiftDrag() {
+        const draftRow = document.getElementById("draftShiftRow");
+        const preview = document.getElementById("draftShiftPreview");
+        const previewText = document.getElementById("draftShiftPreviewText");
+
+        if (!draftRow) return;
+
+        draftRow.addEventListener("contextmenu", (event) => {
+          showDraftContextMenu(event, draftRow);
+        });
+
+        draftRow.addEventListener("pointerdown", (event) => {
+          if (event.button !== 0) return;
+          const rect = draftRow.getBoundingClientRect();
+          dragStartX = event.clientX - rect.left;
+          dragEndX = dragStartX;
+
+          draftRow.setPointerCapture(event.pointerId);
+
+          preview.classList.remove("hidden");
+          preview.classList.add("flex");
+        });
+
+        function setQuickShiftTimes(template) {
+          const startDate = new Date(viewedDate);
+          const endDate = new Date(viewedDate);
+
+          if (template === "morning") {
+            startDate.setHours(7, 30, 0, 0);
+            endDate.setHours(11, 30, 0, 0);
+          }
+
+          if (template === "afternoon") {
+            startDate.setHours(10, 0, 0, 0);
+            endDate.setHours(16, 0, 0, 0);
+          }
+
+          if (template === "evening") {
+            startDate.setHours(14, 0, 0, 0);
+            endDate.setHours(18, 0, 0, 0);
+          }
+
+          populateWorkstudySelect();
+
+          newShiftStart.value = dateToLocalInputValue(startDate);
+          newShiftEnd.value = dateToLocalInputValue(endDate);
+          newShiftStatus.value = "Unconfirmed";
+          newShiftNotes.value = "";
+
+          newShiftModal.showModal();
+        }
+
+        draftRow.addEventListener("pointermove", (event) => {
+          if (dragStartX === null) return;
+
+          const rect = draftRow.getBoundingClientRect();
+          dragEndX = event.clientX - rect.left;
+
+          const startX = Math.min(dragStartX, dragEndX);
+          const endX = Math.max(dragStartX, dragEndX);
+
+          const startMinutes = xToMinutes(startX);
+          const endMinutes = Math.max(
+            startMinutes + slotMinutes,
+            xToMinutes(endX),
+          );
+
+          const left = (startMinutes / slotMinutes) * slotWidth;
+          const width = ((endMinutes - startMinutes) / slotMinutes) * slotWidth;
+
+          const startDate = minutesToDate(startMinutes);
+          const endDate = minutesToDate(endMinutes);
+
+          preview.style.left = `${left}px`;
+          preview.style.width = `${width}px`;
+          previewText.textContent = `${formatShiftTime(startDate)} - ${formatShiftTime(endDate)}`;
+        });
+
+        draftRow.addEventListener("pointerup", (event) => {
+          if (dragStartX === null || dragEndX === null) return;
+
+          const startX = Math.min(dragStartX, dragEndX);
+          const endX = Math.max(dragStartX, dragEndX);
+
+          const startMinutes = xToMinutes(startX);
+          const endMinutes = Math.max(
+            startMinutes + slotMinutes,
+            xToMinutes(endX),
+          );
+
+          const startDate = minutesToDate(startMinutes);
+          const endDate = minutesToDate(endMinutes);
+
+          dragStartX = null;
+          dragEndX = null;
+
+          populateWorkstudySelect();
+
+          newShiftStart.value = dateToLocalInputValue(startDate);
+          newShiftEnd.value = dateToLocalInputValue(endDate);
+          newShiftStatus.value = "Unconfirmed";
+          newShiftNotes.value = "";
+
+          newShiftModal.showModal();
+        });
+      }
+
+      function setQuickShiftTimes(template) {
+        const startDate = new Date(viewedDate);
+        const endDate = new Date(viewedDate);
+
+        if (template === "morning") {
+          startDate.setHours(7, 30, 0, 0);
+          endDate.setHours(11, 30, 0, 0);
+        }
+
+        if (template === "afternoon") {
+          startDate.setHours(10, 0, 0, 0);
+          endDate.setHours(16, 0, 0, 0);
+        }
+
+        if (template === "evening") {
+          startDate.setHours(14, 0, 0, 0);
+          endDate.setHours(18, 0, 0, 0);
+        }
+
+        populateWorkstudySelect();
+
+        newShiftStart.value = dateToLocalInputValue(startDate);
+        newShiftEnd.value = dateToLocalInputValue(endDate);
+        newShiftStatus.value = "Unconfirmed";
+        newShiftNotes.value = "";
+
+        newShiftModal.showModal();
+      }
+
+      document.addEventListener("click", (event) => {
+        const quickOption = event.target.closest(".quick-shift-option");
+
+        if (quickOption) {
+          hideDraftContextMenu();
+          setQuickShiftTimes(quickOption.dataset.shiftTemplate);
+          return;
+        }
+
+        if (!draftContextMenu.contains(event.target)) {
+          hideDraftContextMenu();
+        }
+      });
+
+      cancelNewShiftBtn.addEventListener("click", () => {
+        newShiftModal.close();
+        resetDraftPreview();
+      });
+
+      saveNewShiftBtn.addEventListener("click", async () => {
+        if (
+          !newShiftWorkstudy.value ||
+          !newShiftStart.value ||
+          !newShiftEnd.value
+        ) {
+          alert("Please fill out the required shift fields.");
+          return;
+        }
+
+        saveNewShiftBtn.disabled = true;
+        saveNewShiftBtn.textContent = "Saving...";
+
+        try {
+          await createShiftRecord();
+
+          newShiftModal.close();
+          resetDraftPreview();
+
+          saveNewShiftBtn.disabled = false;
+          saveNewShiftBtn.textContent = "Save Shift";
+
+          await loadDaySchedule();
+        } catch (error) {
+          console.error(error);
+
+          saveNewShiftBtn.disabled = false;
+          saveNewShiftBtn.textContent = "Save Shift";
+
+          alert("Something went wrong creating the shift.");
+        }
+      });
+
+      function renderCalendar(shifts, workstudyMap) {
+        const slots = getSlots();
+        const totalSlots = slots.length;
+        const gridWidth = totalSlots * slotWidth;
+        const rowHeight = 64;
+
+        const draftRow = `
+  <div
+    id="draftShiftRow"
+    class="relative border-b border-neutral-100 bg-neutral-50 cursor-crosshair"
+    style="height:${rowHeight}px; width:${gridWidth}px;"
+  >
+    <div
+      class="relative h-full"
+      style="
+        background-image: linear-gradient(to right, rgba(0,0,0,.08) 1px, transparent 1px);
+        background-size: ${slotWidth}px 100%;
+      "
+    >
+      <div class="absolute inset-0 flex items-center px-4 pointer-events-none">
+        <span class="text-xs font-black uppercase opacity-40">
+          Drag here to create a new shift
+        </span>
+      </div>
+
+      <div
+        id="draftShiftPreview"
+        class="hidden absolute top-3 h-10 rounded-full bg-neutral text-base-100 px-4 items-center shadow-sm pointer-events-none"
+      >
+        <span id="draftShiftPreviewText" class="text-xs font-black uppercase truncate">
+          New Shift
+        </span>
+      </div>
+    </div>
+  </div>
+`;
+
+        currentDayLabel.textContent = formatDayLabel(viewedDate);
+
+        const noShiftsMessage =
+          shifts.length === 0
+            ? `
+      <div class="p-6 border-b border-neutral-100">
+        <p class="uppercase text-sm font-bold opacity-60">
+          No shifts scheduled for this day.
+        </p>
+      </div>
+    `
+            : "";
+
+        const rows = shifts.map((record) => {
+          const fields = record.fields;
+
+          const name = getWorkstudyName(fields, workstudyMap);
+          const start = new Date(fields.shift_start);
+          const end = new Date(fields.shift_end);
+
+          const leftMinutes = Math.max(
+            0,
+            getMinutesFromStart(fields.shift_start),
+          );
+          const durationMinutes = Math.max(30, (end - start) / 60000);
+
+          const left = (leftMinutes / slotMinutes) * slotWidth;
+          const width = (durationMinutes / slotMinutes) * slotWidth;
+
+          const status = fields.shift_status || "Unconfirmed";
+
+          const barColorClass =
+            status === "Confirmed"
+              ? "bg-primary text-base-100"
+              : "bg-amber-400 text-neutral";
+
+          return `
+  <div
+    class="relative border-b border-neutral-100"
+    style="height:${rowHeight}px; width:${gridWidth}px;"
+  >
+    <div
+      class="relative h-full"
+      style="
+        background-image: linear-gradient(to right, rgba(0,0,0,.08) 1px, transparent 1px);
+        background-size: ${slotWidth}px 100%;
+      "
+    >
+      <div
+        class="absolute top-3 h-10 rounded-full ${barColorClass} px-4 flex items-center shadow-sm"
+        style="left:${left}px; width:${width}px;"
+      >
+        <span class="text-xs font-black uppercase truncate">
+          ${name} · ${formatShiftTime(fields.shift_start)} - ${formatShiftTime(fields.shift_end)}
+        </span>
+      </div>
+    </div>
+  </div>
+`;
+        });
+
+        calendarEl.innerHTML = `
+<div
+  class="border-b border-neutral-200 bg-base-100 sticky top-0 z-30"
+  style="width:${gridWidth}px;"
+>
+  <div
+    class="grid"
+    style="grid-template-columns: repeat(${totalSlots}, ${slotWidth}px);"
+  >
+          ${slots
+            .map(
+              (slot) => `
+                <div class="px-2 py-3 border-r border-neutral-100">
+                  <p class="text-[10px] font-black uppercase opacity-60 whitespace-nowrap">
+                    ${slot.label}
+                  </p>
+                </div>
+              `,
+            )
+            .join("")}
+        </div>
+      </div>
+
+${noShiftsMessage}
+${rows.join("")}
+${draftRow}
+    `;
+        setupDraftShiftDrag();
+      }
+
+      async function fetchUser() {
+        if (!userId) {
+          window.location.href = "login.html";
+          return;
+        }
+
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          USERS_TABLE,
+        )}/${userId}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch user");
+        }
+
+        const data = await response.json();
+        return data.fields;
+      }
+
+      async function loadUserHeader() {
+        try {
+          const user = await fetchUser();
+
+          avatarEl.src =
+            user.avatar_url ||
+            "https://img.daisyui.com/images/profile/demo/yellingcat@192.webp";
+
+          nameEl.textContent = user.display_name || "User";
+
+          if (user.role && user.role.length > 0) {
+            roleEl.textContent = "Loading...";
+            await loadRoleName(user.role[0]);
+          } else {
+            roleEl.textContent = "Standard";
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      async function loadRoleName(roleRecordId) {
+        const url = `https://api.airtable.com/v0/${BASE_ID}/Roles/${roleRecordId}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) return;
+
+        const data = await response.json();
+        roleEl.textContent = data.fields.name || "Role";
+      }
+
+      async function loadDaySchedule() {
+        calendarEl.innerHTML = `
+      <div class="p-8">
+        <p class="uppercase text-sm font-bold opacity-60">Loading schedule...</p>
+      </div>
+    `;
+
+        const dayString = formatDateForAirtable(viewedDate);
+        const [allRecords, workstudyMap] = await Promise.all([
+          fetchScheduleRecords(),
+
+          fetchActiveWorkstudiesMap(),
+        ]);
+
+        const shiftsForDay = allRecords
+          .filter((record) => {
+            const fields = record.fields;
+
+            if (!fields.shift_start || !fields.shift_end) return false;
+
+            const shiftDate = fields.shift_date || fields.shift_start;
+            const recordDay = formatDateForAirtable(new Date(shiftDate));
+
+            return recordDay === dayString;
+          })
+          .sort((a, b) => {
+            return (
+              new Date(a.fields.shift_start) - new Date(b.fields.shift_start)
+            );
+          });
+
+        renderCalendar(shiftsForDay, workstudyMap);
+      }
+
+      prevDayBtn.addEventListener("click", () => {
+        viewedDate.setDate(viewedDate.getDate() - 1);
+        loadDaySchedule();
+      });
+
+      nextDayBtn.addEventListener("click", () => {
+        viewedDate.setDate(viewedDate.getDate() + 1);
+        loadDaySchedule();
+      });
+
+      todayBtn.addEventListener("click", () => {
+        viewedDate = new Date();
+        viewedDate.setHours(0, 0, 0, 0);
+        loadDaySchedule();
+      });
+
+      loadUserHeader();
+
+      loadDaySchedule().catch((error) => {
+        console.error(error);
+        calendarEl.innerHTML = `
+      <div class="p-8">
+        <p class="uppercase text-sm font-bold text-error">
+          Something went wrong loading the schedule.
+        </p>
+      </div>
+    `;
+      });
+    </script>
+  </body>
+</html>

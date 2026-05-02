@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <!--font-->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap"
+      rel="stylesheet"
+    />
+    <!--tailwind-->
+    <link href="src/output.css" rel="stylesheet" />
+    <!--icons-->
+    <link
+      rel="stylesheet"
+      href="https://cdn-uicons.flaticon.com/4.0.0/uicons-regular-rounded/css/uicons-regular-rounded.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn-uicons.flaticon.com/4.0.0/uicons-bold-rounded/css/uicons-bold-rounded.css"
+    />
+  </head>
+  <body class="h-screen overflow-hidden">
+    <!--main container-->
+    <div class="h-screen bg-neutral-100 flex overflow-hidden">
+      <!--sidebar-->
+      <div class="flex flex-col bg-base-100 w-60 shadow-md z-10">
+        <div
+          class="h-16 flex items-center pl-8 border-b border-neutral-100 gap-1"
+        >
+          <i class="fi fi-br-e-learning pt-1 text-lg text-primary"></i>
+          <h1 class="font-black text-md uppercase">CPO Portal</h1>
+        </div>
+        <div class="mt-8">
+          <ul class="menu p-0 w-full space-y-2">
+            <li>
+              <a href="index.html" class="navItem"
+                ><i class="fi fi-br-apps pt-1"></i>Dashboard</a
+              >
+            </li>
+            <li>
+              <a href="announcements.html" class="navItem navActive"
+                ><i class="fi fi-br-megaphone-sound-waves pt-1"></i
+                >Announcements</a
+              >
+            </li>
+            <li>
+              <details>
+                <summary class="navItem">
+                  <i class="fi fi-br-inventory-alt pt-1"></i>Schedule
+                </summary>
+                <div class="bg-neutral-100 py-4">
+                  <li>
+                    <a href="schedule-calendar.html" class="navItemSub"
+                      >Calendar</a
+                    >
+                  </li>
+                  <li>
+                    <a href="schedule-shifts.html" class="navItemSub"
+                      >Scheduled Shifts</a
+                    >
+                  </li>
+                </div>
+              </details>
+            </li>
+            <li>
+              <a class="navItem"
+                ><i class="fi fi-br-users pt-1"></i>Employees</a
+              >
+            </li>
+            <li>
+              <details>
+                <summary class="navItem">
+                  <i class="fi fi-br-inventory-alt pt-1"></i>Inventory
+                </summary>
+                <div class="bg-neutral-100 py-4">
+                  <li><a class="navItemSub">Active</a></li>
+                  <li><a class="navItemSub">Applicants</a></li>
+                </div>
+              </details>
+            </li>
+            <li>
+              <a class="navItem"
+                ><i class="fi fi-br-document pt-1"></i>Resources</a
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+      <!--right-->
+      <div class="flex-1 flex flex-col overflow-hidden">
+        <!--header-->
+        <div class="h-16 bg-base-100 flex items-center shadow-md px-8">
+          <div class="flex-1"></div>
+          <div>
+            <a class="btn btn-circle btn-sm bg-neutral-200 border-0 shadow-none"
+              ><i class="fi fi-br-bell pt-1 opacity-60"></i
+            ></a>
+          </div>
+          <div class="divider divider-horizontal px-4 opacity-20"></div>
+          <div class="flex items-center gap-4">
+            <div class="avatar">
+              <div class="w-8 rounded-full">
+                <img id="userAvatar" src="" />
+              </div>
+            </div>
+            <div class="flex flex-col">
+              <h1 id="userName" class="text-xs uppercase font-bold">
+                Username
+              </h1>
+              <h2 id="userRole" class="text-xs opacity-60 uppercase">Role</h2>
+            </div>
+            <i class="fi fi-br-angle-small-down pt-1 opacity-60"></i>
+          </div>
+        </div>
+        <!--content-->
+        <div class="p-8 overflow-y-auto">
+          <div
+            class="bg-base-100 shadow-md rounded-lg px-8 py-4 bg-linear-to-bl from-[#f3f520] to-[#4DB900] text-base-100 from-10% flex items-center justify-between"
+          >
+            <h1 class="uppercase font-black text-2xl">Announcements</h1>
+            <a
+              class="btn rounded-full bg-base-100 text-neutral-600 text-xs shadow-none border-0 uppercase font-bold"
+              >+ Add New</a
+            >
+          </div>
+          <div
+            id="announcementsGrid"
+            class="grid md:grid-cols-3 gap-8 mt-8"
+          ></div>
+        </div>
+      </div>
+    </div>
+    <!-- edit drawer -->
+    <div id="drawerOverlay" class="hidden fixed inset-0 bg-black/30 z-40"></div>
+
+    <div
+      id="editDrawer"
+      class="fixed top-0 right-0 h-screen w-full max-w-md bg-base-100 z-50 shadow-xl translate-x-full transition-transform duration-300 flex flex-col"
+    >
+      <div
+        class="h-16 px-6 border-b border-neutral-200 flex items-center justify-between"
+      >
+        <h1 class="font-black uppercase text-lg">Edit Announcement</h1>
+        <button
+          id="closeDrawerBtn"
+          class="btn btn-sm btn-circle border-0 shadow-none"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div class="p-6 flex flex-col gap-4 overflow-y-auto">
+        <input type="hidden" id="editRecordId" />
+
+        <div>
+          <label class="label font-bold uppercase text-xs">Title</label>
+          <input id="editTitle" type="text" class="input w-full" />
+        </div>
+
+        <div>
+          <label class="label font-bold uppercase text-xs">Subject</label>
+          <input id="editSubject" type="text" class="input w-full" />
+        </div>
+
+        <div>
+          <label class="label font-bold uppercase text-xs">Body</label>
+          <textarea
+            id="editBody"
+            class="textarea textarea-bordered w-full min-h-40"
+          ></textarea>
+        </div>
+
+        <div>
+          <label class="label font-bold uppercase text-xs">Created At</label>
+          <input
+            id="editCreatedAt"
+            type="datetime-local"
+            class="input w-full"
+          />
+        </div>
+      </div>
+
+      <div class="p-6 border-t border-neutral-200">
+        <button
+          id="saveAnnouncementBtn"
+          class="btn w-full bg-neutral text-base-100 border-0 shadow-none uppercase font-bold"
+        >
+          Save Changes
+        </button>
+      </div>
+    </div>
+    <script>
+      const AIRTABLE_TOKEN =
+        "path5D1SLsZnikHyD.8e47f28d9b3b2913d1ebf07e9b1beb8c0903a82bb49266f19cb98fb4021b0129";
+      const BASE_ID = "appYqZMGk18beV4qI";
+      const ANNOUNCEMENTS_TABLE = "Announcements";
+
+      const announcementsGrid = document.getElementById("announcementsGrid");
+
+      const drawerOverlay = document.getElementById("drawerOverlay");
+      const editDrawer = document.getElementById("editDrawer");
+      const closeDrawerBtn = document.getElementById("closeDrawerBtn");
+      const saveAnnouncementBtn = document.getElementById(
+        "saveAnnouncementBtn",
+      );
+
+      const editRecordId = document.getElementById("editRecordId");
+      const editTitle = document.getElementById("editTitle");
+      const editSubject = document.getElementById("editSubject");
+      const editBody = document.getElementById("editBody");
+      const editCreatedAt = document.getElementById("editCreatedAt");
+
+      const USERS_TABLE = "Users";
+      const userId = localStorage.getItem("cpoUserId");
+      const avatarEl = document.getElementById("userAvatar");
+      const nameEl = document.getElementById("userName");
+      const roleEl = document.getElementById("userRole");
+
+      let announcements = [];
+
+      function formatDateTimeForInput(dateString) {
+        if (!dateString) return "";
+
+        const date = new Date(dateString);
+        if (isNaN(date)) return "";
+
+        const offset = date.getTimezoneOffset();
+        const localDate = new Date(date.getTime() - offset * 60000);
+
+        return localDate.toISOString().slice(0, 16);
+      }
+
+      function formatDate(dateString) {
+        const date = new Date(dateString);
+        if (isNaN(date)) return "";
+
+        return date.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
+      }
+
+      function openDrawer(record) {
+        const fields = record.fields;
+
+        editRecordId.value = record.id;
+        editTitle.value = fields.title || "";
+        editSubject.value = fields.subject || "";
+        editBody.value = fields.body || "";
+        editCreatedAt.value = formatDateTimeForInput(fields.created_at);
+
+        drawerOverlay.classList.remove("hidden");
+        editDrawer.classList.remove("translate-x-full");
+      }
+
+      function closeDrawer() {
+        drawerOverlay.classList.add("hidden");
+        editDrawer.classList.add("translate-x-full");
+      }
+
+      async function fetchUser() {
+        if (!userId) {
+          window.location.href = "login.html";
+          return;
+        }
+
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          USERS_TABLE,
+        )}/${userId}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch user");
+        }
+
+        const data = await response.json();
+        return data.fields;
+      }
+
+      async function loadUserHeader() {
+        try {
+          const user = await fetchUser();
+
+          avatarEl.src =
+            user.avatar_url ||
+            "https://img.daisyui.com/images/profile/demo/yellingcat@192.webp";
+
+          nameEl.textContent = user.display_name || "User";
+
+          if (user.role && user.role.length > 0) {
+            roleEl.textContent = "Loading...";
+            await loadRoleName(user.role[0]);
+          } else {
+            roleEl.textContent = "Standard";
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      async function loadRoleName(roleRecordId) {
+        const url = `https://api.airtable.com/v0/${BASE_ID}/Roles/${roleRecordId}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) return;
+
+        const data = await response.json();
+        roleEl.textContent = data.fields.name || "Role";
+      }
+
+      async function fetchAnnouncements() {
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          ANNOUNCEMENTS_TABLE,
+        )}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch announcements");
+        }
+
+        const data = await response.json();
+
+        announcements = data.records.sort((a, b) => {
+          return new Date(b.fields.created_at) - new Date(a.fields.created_at);
+        });
+
+        renderAnnouncements();
+      }
+
+      function renderAnnouncements() {
+        if (announcements.length === 0) {
+          announcementsGrid.innerHTML = `
+        <div class="bg-base-100 rounded-lg shadow-md p-8 uppercase">
+          <p class="text-sm opacity-60">No announcements found.</p>
+        </div>
+      `;
+          return;
+        }
+
+        announcementsGrid.innerHTML = announcements
+          .map((record) => {
+            const fields = record.fields;
+
+            return `
+          <button
+            type="button"
+            data-record-id="${record.id}"
+            class="announcement-card text-left bg-base-100 rounded-lg flex flex-col shadow-md uppercase group overflow-hidden"
+          >
+            <div class="px-8 py-4 border-b border-neutral-200">
+              <h1 class="font-bold text-lg">
+                ${fields.title || "Untitled Announcement"}
+              </h1>
+            </div>
+
+            <div class="px-8 py-4 space-y-4 flex-1">
+              <p class="opacity-60 text-md">
+                ${fields.subject || "No subject"}
+              </p>
+
+              <span class="inline-block font-semibold text-sm rounded-full border border-neutral-200 px-4 py-1">
+                ${formatDate(fields.created_at)}
+              </span>
+            </div>
+
+            <div class="inset-shadow-sm px-8 py-4 text-center group-hover:bg-primary group-hover:text-base-100">
+              <h1 class="text-xs font-bold">View Details</h1>
+            </div>
+          </button>
+        `;
+          })
+          .join("");
+      }
+
+      async function updateAnnouncement() {
+        const recordId = editRecordId.value;
+
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          ANNOUNCEMENTS_TABLE,
+        )}/${recordId}`;
+
+        const response = await fetch(url, {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            fields: {
+              title: editTitle.value.trim(),
+              subject: editSubject.value.trim(),
+              body: editBody.value.trim(),
+              created_at: editCreatedAt.value
+                ? new Date(editCreatedAt.value).toISOString()
+                : null,
+            },
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to update announcement");
+        }
+
+        return response.json();
+      }
+
+      document.addEventListener("click", (event) => {
+        const card = event.target.closest(".announcement-card");
+        if (!card) return;
+
+        const record = announcements.find(
+          (item) => item.id === card.dataset.recordId,
+        );
+        if (record) openDrawer(record);
+      });
+
+      closeDrawerBtn.addEventListener("click", closeDrawer);
+      drawerOverlay.addEventListener("click", closeDrawer);
+
+      saveAnnouncementBtn.addEventListener("click", async () => {
+        saveAnnouncementBtn.disabled = true;
+        saveAnnouncementBtn.textContent = "Saving...";
+
+        try {
+          await updateAnnouncement();
+          await fetchAnnouncements();
+
+          saveAnnouncementBtn.disabled = false;
+          saveAnnouncementBtn.textContent = "Save Changes";
+
+          closeDrawer();
+        } catch (error) {
+          console.error(error);
+
+          saveAnnouncementBtn.disabled = false;
+          saveAnnouncementBtn.textContent = "Save Changes";
+
+          alert("Something went wrong saving the announcement.");
+        }
+      });
+
+      loadUserHeader();
+
+      fetchAnnouncements().catch((error) => {
+        console.error(error);
+        announcementsGrid.innerHTML = `
+      <div class="bg-base-100 rounded-lg shadow-md p-8 uppercase">
+        <p class="text-sm opacity-60">Something went wrong loading announcements.</p>
+      </div>
+    `;
+      });
+    </script>
+  </body>
+</html>
