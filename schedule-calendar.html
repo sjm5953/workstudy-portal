@@ -27,111 +27,11 @@
     <!--main container-->
     <div class="h-screen bg-neutral-100 flex overflow-hidden">
       <!--sidebar-->
-      <div class="flex flex-col bg-base-100 w-60 shadow-md z-10">
-        <div
-          class="h-16 flex items-center pl-8 border-b border-neutral-100 gap-1"
-        >
-          <i class="fi fi-br-e-learning pt-1 text-lg text-primary"></i>
-          <h1 class="font-black text-md uppercase">CPO Portal</h1>
-        </div>
-        <div class="mt-8">
-          <ul class="menu p-0 w-full space-y-2">
-            <li>
-              <a href="index.html" class="navItem"
-                ><i class="fi fi-br-apps pt-1"></i>Dashboard</a
-              >
-            </li>
-            <li>
-              <a href="announcements.html" class="navItem"
-                ><i class="fi fi-br-megaphone-sound-waves pt-1"></i
-                >Announcements</a
-              >
-            </li>
-            <li>
-              <details open>
-                <summary class="navItem">
-                  <i class="fi fi-br-calendar-day pt-1"></i>Schedule
-                </summary>
-                <div class="bg-neutral-100 py-4">
-                  <li>
-                    <a
-                      href="schedule-calendar.html"
-                      class="navItemSub navSubActive"
-                      >Calendar</a
-                    >
-                  </li>
-                  <li>
-                    <a href="schedule-shifts.html" class="navItemSub"
-                      >Scheduled Shifts</a
-                    >
-                  </li>
-                </div>
-              </details>
-            </li>
-            <li>
-              <details>
-                <summary class="navItem">
-                  <i class="fi fi-br-users pt-1"></i>Employees
-                </summary>
-                <div class="bg-neutral-100 py-4">
-                  <li>
-                    <a href="employees-active.html" class="navItemSub"
-                      >Active</a
-                    >
-                  </li>
-                  <li>
-                    <a href="employees-applicant.html" class="navItemSub"
-                      >Applicants</a
-                    >
-                  </li>
-                </div>
-              </details>
-            </li>
-            <li>
-              <details>
-                <summary class="navItem">
-                  <i class="fi fi-br-inventory-alt pt-1"></i>Inventory
-                </summary>
-                <div class="bg-neutral-100 py-4">
-                  <li><a class="navItemSub">Active</a></li>
-                  <li><a class="navItemSub">Applicants</a></li>
-                </div>
-              </details>
-            </li>
-            <li>
-              <a class="navItem"
-                ><i class="fi fi-br-document pt-1"></i>Resources</a
-              >
-            </li>
-          </ul>
-        </div>
-      </div>
+      <div id="sidebar"></div>
       <!--right-->
       <div class="flex-1 flex flex-col overflow-hidden">
         <!--header-->
-        <div class="h-16 bg-base-100 flex items-center shadow-md px-8">
-          <div class="flex-1"></div>
-          <div>
-            <a class="btn btn-circle btn-sm bg-neutral-200 border-0 shadow-none"
-              ><i class="fi fi-br-bell pt-1 opacity-60"></i
-            ></a>
-          </div>
-          <div class="divider divider-horizontal px-4 opacity-20"></div>
-          <div class="flex items-center gap-4">
-            <div class="avatar">
-              <div class="w-8 rounded-full">
-                <img id="userAvatar" src="" />
-              </div>
-            </div>
-            <div class="flex flex-col">
-              <h1 id="userName" class="text-xs uppercase font-bold">
-                Username
-              </h1>
-              <h2 id="userRole" class="text-xs opacity-60 uppercase">Role</h2>
-            </div>
-            <i class="fi fi-br-angle-small-down pt-1 opacity-60"></i>
-          </div>
-        </div>
+        <div id="header"></div>
         <!--content-->
         <div class="overflow-y-auto flex flex-col flex-1">
           <div
@@ -266,6 +166,8 @@
         Evening
       </button>
     </div>
+    <script src="src/components.js"></script>
+
     <script>
       const AIRTABLE_TOKEN =
         "path5D1SLsZnikHyD.8e47f28d9b3b2913d1ebf07e9b1beb8c0903a82bb49266f19cb98fb4021b0129";
@@ -307,6 +209,24 @@
       const avatarEl = document.getElementById("userAvatar");
       const nameEl = document.getElementById("userName");
       const roleEl = document.getElementById("userRole");
+
+      function setActiveNav() {
+        const currentPage = window.location.pathname.split("/").pop();
+
+        const links = document.querySelectorAll("[data-page]");
+
+        links.forEach((link) => {
+          if (link.dataset.page === currentPage) {
+            link.classList.add("navSubActive");
+
+            // 👇 If inside a <details>, open it
+            const details = link.closest("details");
+            if (details) {
+              details.open = true;
+            }
+          }
+        });
+      }
 
       function showDraftContextMenu(event, draftRow) {
         event.preventDefault();
@@ -887,27 +807,29 @@ ${draftRow}
       }
 
       async function loadUserHeader() {
-        try {
-          const user = await fetchUser();
+        const avatarEl = document.getElementById("userAvatar");
+        const nameEl = document.getElementById("userName");
+        const roleEl = document.getElementById("userRole");
 
-          avatarEl.src =
-            user.avatar_url ||
-            "https://img.daisyui.com/images/profile/demo/yellingcat@192.webp";
+        const user = await fetchUser();
 
-          nameEl.textContent = user.display_name || "User";
+        avatarEl.src =
+          user.avatar_url ||
+          "https://img.daisyui.com/images/profile/demo/yellingcat@192.webp";
 
-          if (user.role && user.role.length > 0) {
-            roleEl.textContent = "Loading...";
-            await loadRoleName(user.role[0]);
-          } else {
-            roleEl.textContent = "Standard";
-          }
-        } catch (err) {
-          console.error(err);
+        nameEl.textContent = user.display_name || "User";
+
+        if (user.role && user.role.length > 0) {
+          roleEl.textContent = "Loading...";
+          await loadRoleName(user.role[0]);
+        } else {
+          roleEl.textContent = "Standard";
         }
       }
 
       async function loadRoleName(roleRecordId) {
+        const roleEl = document.getElementById("userRole");
+
         const url = `https://api.airtable.com/v0/${BASE_ID}/Roles/${roleRecordId}`;
 
         const response = await fetch(url, {
@@ -916,7 +838,10 @@ ${draftRow}
           },
         });
 
-        if (!response.ok) return;
+        if (!response.ok) {
+          roleEl.textContent = "Role";
+          return;
+        }
 
         const data = await response.json();
         roleEl.textContent = data.fields.name || "Role";
@@ -970,6 +895,12 @@ ${draftRow}
         viewedDate = new Date();
         viewedDate.setHours(0, 0, 0, 0);
         loadDaySchedule();
+      });
+
+      loadComponent("sidebar", "components/sidebar.html");
+
+      loadComponent("sidebar", "components/sidebar.html", () => {
+        setActiveNav();
       });
 
       loadUserHeader();

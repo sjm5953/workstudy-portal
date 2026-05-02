@@ -31,119 +31,12 @@
     <!-- main container -->
     <div class="h-screen bg-neutral-100 flex overflow-hidden">
       <!-- SIDEBAR -->
-      <div class="flex flex-col bg-base-100 w-60 shadow-md z-10">
-        <div
-          class="h-16 flex items-center pl-8 border-b border-neutral-100 gap-1"
-        >
-          <i class="fi fi-br-e-learning pt-1 text-lg text-primary"></i>
-          <h1 class="font-black text-md uppercase">CPO Portal</h1>
-        </div>
-
-        <div class="mt-8">
-          <ul class="menu p-0 w-full space-y-2">
-            <li>
-              <a href="index.html" class="navItem"
-                ><i class="fi fi-br-apps pt-1"></i>Dashboard</a
-              >
-            </li>
-            <li>
-              <a href="announcements.html" class="navItem"
-                ><i class="fi fi-br-megaphone-sound-waves pt-1"></i
-                >Announcements</a
-              >
-            </li>
-            <li>
-              <details open>
-                <summary class="navItem">
-                  <i class="fi fi-br-calendar-day pt-1"></i>Schedule
-                </summary>
-                <div class="bg-neutral-100 py-4">
-                  <li>
-                    <a href="schedule-calendar.html" class="navItemSub"
-                      >Calendar</a
-                    >
-                  </li>
-                  <li>
-                    <a
-                      href="schedule-shifts.html"
-                      class="navItemSub navSubActive"
-                      >Scheduled Shifts</a
-                    >
-                  </li>
-                </div>
-              </details>
-            </li>
-            <li>
-              <details>
-                <summary class="navItem">
-                  <i class="fi fi-br-users pt-1"></i>Employees
-                </summary>
-                <div class="bg-neutral-100 py-4">
-                  <li>
-                    <a href="employees-active.html" class="navItemSub"
-                      >Active</a
-                    >
-                  </li>
-                  <li>
-                    <a href="employees-applicant.html" class="navItemSub"
-                      >Applicants</a
-                    >
-                  </li>
-                </div>
-              </details>
-            </li>
-            <li>
-              <details>
-                <summary class="navItem">
-                  <i class="fi fi-br-inventory-alt pt-1"></i>Inventory
-                </summary>
-                <div class="bg-neutral-100 py-4">
-                  <li><a class="navItemSub">Active</a></li>
-                  <li><a class="navItemSub">Applicants</a></li>
-                </div>
-              </details>
-            </li>
-            <li>
-              <a class="navItem"
-                ><i class="fi fi-br-document pt-1"></i>Resources</a
-              >
-            </li>
-          </ul>
-        </div>
-      </div>
+      <div id="sidebar"></div>
 
       <!-- RIGHT SIDE -->
       <div class="flex-1 flex flex-col overflow-hidden">
         <!-- HEADER -->
-        <div class="h-16 bg-base-100 flex items-center shadow-md px-8">
-          <div class="flex-1"></div>
-
-          <a class="btn btn-circle btn-sm bg-neutral-200 border-0 shadow-none">
-            <i class="fi fi-br-bell pt-1 opacity-60"></i>
-          </a>
-
-          <div class="divider divider-horizontal px-4 opacity-20"></div>
-
-          <!-- USER -->
-          <div class="flex items-center gap-4">
-            <div class="avatar">
-              <div class="w-8 rounded-full">
-                <img id="userAvatar" src="" />
-              </div>
-            </div>
-
-            <div class="flex flex-col">
-              <h1 id="userName" class="text-xs uppercase font-bold">
-                Loading...
-              </h1>
-              <h2 id="userRole" class="text-xs opacity-60 uppercase">
-                Loading...
-              </h2>
-            </div>
-
-            <i class="fi fi-br-angle-small-down pt-1 opacity-60"></i>
-          </div>
-        </div>
+        <div id="header"></div>
 
         <!-- CONTENT -->
         <div class="p-8 flex flex-col flex-1 overflow-hidden min-h-0">
@@ -152,12 +45,35 @@
             class="bg-base-100 shadow-md rounded-lg px-8 py-4 bg-linear-to-bl from-[#f3f520] to-[#4DB900] text-base-100 flex items-center justify-between"
           >
             <h1 class="uppercase font-black text-2xl">Scheduled Shifts</h1>
-
-            <button
-              class="btn btn-sm rounded-full bg-base-100 border-0 shadow-none px-6 py-1"
-            >
-              + Add Shift
-            </button>
+            <div class="flex gap-4 items-center">
+              <button
+                class="btn btn-sm rounded-full bg-base-100 border-0 shadow-none px-6 py-1"
+              >
+                + Add Shift
+              </button>
+              <div class="dropdown dropdown-end">
+                <div
+                  tabindex="0"
+                  role="button"
+                  class="btn text-xl bg-transparent border-0 shadow-none text-base-100"
+                >
+                  <i class="fi fi-br-menu-dots-vertical pt-1"></i>
+                </div>
+                <ul
+                  tabindex="-1"
+                  class="dropdown-content mt-2 menu bg-base-100 border border-primary text-neutral rounded-box z-1 w-60 p-2 shadow-sm text-xs"
+                >
+                  <li>
+                    <a
+                      id="requestConfirmationBtn"
+                      class="hover:text-primary hover:bg-transparent font-bold uppercase"
+                    >
+                      Request Confirmation
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </div>
           </div>
 
           <div class="mt-4">
@@ -227,6 +143,85 @@
         </div>
       </div>
     </div>
+    <div
+      id="requestConfirmModal"
+      class="hidden fixed inset-0 z-[9999] bg-black/40 items-center justify-center p-6"
+    >
+      <div
+        class="bg-base-100 rounded-xl shadow-xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden"
+      >
+        <div class="p-6 border-b border-neutral-200 shrink-0 w-full">
+          <h3 class="font-black text-2xl uppercase">
+            Request Schedule Confirmations
+          </h3>
+          <p class="text-sm opacity-60 mt-1">
+            Select which users to request a schedule confirmation from.
+          </p>
+        </div>
+
+        <!-- Step 1: Date Range -->
+        <div id="requestConfirmDateStep" class="p-6 flex-1 w-full">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="label font-bold uppercase text-xs"
+                >Start Date</label
+              >
+              <input
+                id="requestStartDate"
+                type="date"
+                class="input input-bordered w-full"
+              />
+            </div>
+
+            <div>
+              <label class="label font-bold uppercase text-xs">End Date</label>
+              <input
+                id="requestEndDate"
+                type="date"
+                class="input input-bordered w-full"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Grouped List -->
+        <div
+          id="requestConfirmListStep"
+          class="hidden flex-1 min-h-0 w-full flex flex-col"
+        >
+          <div class="px-6 py-3 border-b border-neutral-200 flex justify-end">
+            <button id="selectAllRequestBtn" class="btn btn-sm rounded-full">
+              Select All
+            </button>
+          </div>
+
+          <div
+            id="requestConfirmList"
+            class="p-6 flex-1 min-h-0 overflow-y-auto flex flex-col gap-4 w-full"
+          ></div>
+        </div>
+
+        <div
+          class="p-6 border-t border-neutral-200 flex justify-end gap-3 shrink-0 w-full"
+        >
+          <button id="closeRequestConfirmBtn" class="btn">Cancel</button>
+          <button id="backRequestConfirmBtn" class="btn hidden">Back</button>
+          <button
+            id="nextRequestConfirmBtn"
+            class="btn bg-neutral text-base-100"
+          >
+            Next
+          </button>
+          <button
+            id="submitRequestConfirmBtn"
+            class="btn bg-neutral text-base-100 hidden"
+          >
+            Submit
+          </button>
+        </div>
+      </div>
+    </div>
+    <script src="src/components.js"></script>
 
     <!-- SCRIPT -->
     <script>
@@ -253,6 +248,359 @@
       const startDateInput = document.getElementById("startDate");
       const endDateInput = document.getElementById("endDate");
       const statusFilter = document.getElementById("statusFilter");
+
+      requestConfirmationBtn.addEventListener("click", () => {
+        requestStartDate.value = "";
+        requestEndDate.value = "";
+        requestConfirmList.innerHTML = "";
+
+        showRequestDateStep();
+
+        requestConfirmModal.classList.remove("hidden");
+        requestConfirmModal.classList.add("flex");
+      });
+      const requestConfirmModal = document.getElementById(
+        "requestConfirmModal",
+      );
+      const requestConfirmList = document.getElementById("requestConfirmList");
+      const closeRequestConfirmBtn = document.getElementById(
+        "closeRequestConfirmBtn",
+      );
+      const submitRequestConfirmBtn = document.getElementById(
+        "submitRequestConfirmBtn",
+      );
+
+      const requestConfirmDateStep = document.getElementById(
+        "requestConfirmDateStep",
+      );
+      const requestConfirmListStep = document.getElementById(
+        "requestConfirmListStep",
+      );
+      const requestStartDate = document.getElementById("requestStartDate");
+      const requestEndDate = document.getElementById("requestEndDate");
+      const nextRequestConfirmBtn = document.getElementById(
+        "nextRequestConfirmBtn",
+      );
+      const backRequestConfirmBtn = document.getElementById(
+        "backRequestConfirmBtn",
+      );
+      const selectAllRequestBtn = document.getElementById(
+        "selectAllRequestBtn",
+      );
+
+      const TODO_TABLE = "To Do";
+
+      function setActiveNav() {
+        const currentPage = window.location.pathname.split("/").pop();
+
+        const links = document.querySelectorAll("[data-page]");
+
+        links.forEach((link) => {
+          if (link.dataset.page === currentPage) {
+            link.classList.add("navSubActive");
+
+            // 👇 If inside a <details>, open it
+            const details = link.closest("details");
+            if (details) {
+              details.open = true;
+            }
+          }
+        });
+      }
+
+      async function loadUserHeader() {
+        const avatarEl = document.getElementById("userAvatar");
+        const nameEl = document.getElementById("userName");
+        const roleEl = document.getElementById("userRole");
+
+        try {
+          const user = await fetchUser();
+
+          avatarEl.src =
+            user.avatar_url ||
+            "https://img.daisyui.com/images/profile/demo/yellingcat@192.webp";
+
+          nameEl.textContent = user.display_name || "User";
+
+          if (user.role && user.role.length > 0) {
+            roleEl.textContent = "Loading...";
+            await loadRoleName(user.role[0]);
+          } else {
+            roleEl.textContent = "Standard";
+          }
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
+      async function fetchUsersRecords() {
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          USERS_TABLE,
+        )}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch users");
+        }
+
+        const data = await response.json();
+        return data.records;
+      }
+
+      async function createToDoRecord({ userId, startDate, endDate }) {
+        const confirmationUrl = `schedule-confirmation.html?user=${encodeURIComponent(
+          userId,
+        )}&start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(endDate)}`;
+
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          TODO_TABLE,
+        )}`;
+
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            fields: {
+              user: [userId],
+              title: "Schedule Confirmation Requested",
+              description: `Click Here to confirm your schedule for ${formatDate(
+                startDate,
+              )} - ${formatDate(endDate)}`,
+              completed: false,
+              confirmation_link: confirmationUrl,
+            },
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(errorText);
+          throw new Error("Failed to create To Do record");
+        }
+
+        return response.json();
+      }
+
+      function findUserByWorkstudyId(users, workstudyId) {
+        return users.find((userRecord) => {
+          const linkedWorkstudies = userRecord.fields.linked_workstudy;
+
+          return (
+            Array.isArray(linkedWorkstudies) &&
+            linkedWorkstudies.includes(workstudyId)
+          );
+        });
+      }
+
+      function showRequestDateStep() {
+        requestConfirmDateStep.classList.remove("hidden");
+        requestConfirmListStep.classList.add("hidden");
+
+        nextRequestConfirmBtn.classList.remove("hidden");
+        backRequestConfirmBtn.classList.add("hidden");
+        submitRequestConfirmBtn.classList.add("hidden");
+      }
+
+      function showRequestListStep() {
+        requestConfirmDateStep.classList.add("hidden");
+        requestConfirmListStep.classList.remove("hidden");
+
+        nextRequestConfirmBtn.classList.add("hidden");
+        backRequestConfirmBtn.classList.remove("hidden");
+        submitRequestConfirmBtn.classList.remove("hidden");
+      }
+
+      function isShiftBetweenDates(record, startValue, endValue) {
+        const shiftDate = new Date(record.fields.shift_start);
+        const startDate = new Date(startValue + "T00:00:00");
+        const endDate = new Date(endValue + "T23:59:59");
+
+        return shiftDate >= startDate && shiftDate <= endDate;
+      }
+
+      requestConfirmationBtn.addEventListener("click", () => {
+        renderRequestConfirmModal();
+        requestConfirmModal.classList.remove("hidden");
+        requestConfirmModal.classList.add("flex");
+      });
+
+      closeRequestConfirmBtn.addEventListener("click", () => {
+        requestConfirmModal.classList.add("hidden");
+        requestConfirmModal.classList.remove("flex");
+      });
+
+      submitRequestConfirmBtn.addEventListener("click", async () => {
+        const selectedWorkstudies = Array.from(
+          document.querySelectorAll(".request-user-checkbox:checked"),
+        ).map((checkbox) => {
+          return {
+            name: checkbox.dataset.workstudyName,
+            workstudyId: checkbox.dataset.workstudyId,
+          };
+        });
+
+        if (selectedWorkstudies.length === 0) {
+          alert("Please select at least one workstudy.");
+          return;
+        }
+
+        submitRequestConfirmBtn.disabled = true;
+        submitRequestConfirmBtn.textContent = "Creating...";
+
+        try {
+          const users = await fetchUsersRecords();
+
+          const createRequests = selectedWorkstudies.map((workstudy) => {
+            const matchingUser = findUserByWorkstudyId(
+              users,
+              workstudy.workstudyId,
+            );
+
+            if (!matchingUser) {
+              console.warn(`No user found for ${workstudy.name}`);
+              return null;
+            }
+
+            return createToDoRecord({
+              userId: matchingUser.id,
+              startDate: requestStartDate.value,
+              endDate: requestEndDate.value,
+            });
+          });
+
+          await Promise.all(createRequests.filter(Boolean));
+
+          submitRequestConfirmBtn.disabled = false;
+          submitRequestConfirmBtn.textContent = "Submit";
+
+          requestConfirmModal.classList.add("hidden");
+          requestConfirmModal.classList.remove("flex");
+
+          alert("Schedule confirmation requests created.");
+        } catch (error) {
+          console.error(error);
+
+          submitRequestConfirmBtn.disabled = false;
+          submitRequestConfirmBtn.textContent = "Submit";
+
+          alert("Something went wrong creating confirmation requests.");
+        }
+      });
+
+      function getUnconfirmedGroups(startValue, endValue) {
+        const groups = {};
+
+        allShiftRecords.forEach((record) => {
+          const fields = record.fields;
+
+          if ((fields.shift_status || "Unconfirmed") !== "Unconfirmed") return;
+          if (!isShiftBetweenDates(record, startValue, endValue)) return;
+
+          const name = getWorkstudyName(fields);
+
+          if (!groups[name]) groups[name] = [];
+          groups[name].push(record);
+        });
+
+        return groups;
+      }
+
+      function renderRequestConfirmModal() {
+        const groups = getUnconfirmedGroups(
+          requestStartDate.value,
+          requestEndDate.value,
+        );
+        const groupNames = Object.keys(groups).sort();
+
+        if (groupNames.length === 0) {
+          requestConfirmList.innerHTML = `
+      <div class="bg-neutral-100 rounded-lg p-4">
+        <p class="text-xs uppercase font-bold opacity-60">
+          No unconfirmed shifts found.
+        </p>
+      </div>
+    `;
+          return;
+        }
+
+        requestConfirmList.innerHTML = groupNames
+          .map((name) => {
+            const records = groups[name];
+
+            return `
+<div class="border border-neutral-200 rounded-lg overflow-hidden shrink-0 w-full">
+<label class="flex items-center gap-3 px-4 py-4 bg-neutral-100">
+<input
+  type="checkbox"
+  class="checkbox checkbox-sm request-user-checkbox"
+  data-workstudy-name="${name}"
+  data-workstudy-id="${records[0].fields.workstudy_name[0]}"
+/>
+            <span class="font-black uppercase text-sm">${name}</span>
+            <span class="text-xs opacity-60 uppercase">
+              ${records.length} unconfirmed shift${records.length === 1 ? "" : "s"}
+            </span>
+          </label>
+
+          <div class="divide-y divide-neutral-100">
+            ${records
+              .map((record) => {
+                const f = record.fields;
+
+                return `
+                  <div class="px-4 py-3 flex items-center gap-4 text-sm uppercase">
+                    <span class="font-bold w-32">${formatDate(f.shift_start)}</span>
+                    <span class="opacity-60 flex-1">
+                      ${formatTime(f.shift_start)} - ${formatTime(f.shift_end)}
+                    </span>
+                    <span class="rounded-full px-3 py-1 text-xs bg-amber-400 text-neutral">
+                      ${f.shift_status || "Unconfirmed"}
+                    </span>
+                  </div>
+                `;
+              })
+              .join("")}
+          </div>
+        </div>
+      `;
+          })
+          .join("");
+      }
+
+      nextRequestConfirmBtn.addEventListener("click", () => {
+        if (!requestStartDate.value || !requestEndDate.value) {
+          alert("Please enter a start date and end date.");
+          return;
+        }
+
+        renderRequestConfirmModal();
+        showRequestListStep();
+      });
+
+      backRequestConfirmBtn.addEventListener("click", () => {
+        showRequestDateStep();
+      });
+
+      selectAllRequestBtn.addEventListener("click", () => {
+        const boxes = document.querySelectorAll(".request-user-checkbox");
+        const shouldCheckAll = Array.from(boxes).some((box) => !box.checked);
+
+        boxes.forEach((box) => {
+          box.checked = shouldCheckAll;
+        });
+
+        selectAllRequestBtn.textContent = shouldCheckAll
+          ? "Deselect All"
+          : "Select All";
+      });
 
       function updateFilterUI() {
         const mode = filterMode.value;
@@ -501,30 +849,35 @@
     `;
         }
       }
+      async function loadRoleName(roleRecordId) {
+        const roleEl = document.getElementById("userRole");
 
-      async function loadUserHeader() {
-        try {
-          const user = await fetchUser();
+        const url = `https://api.airtable.com/v0/${BASE_ID}/Roles/${roleRecordId}`;
 
-          avatarEl.src =
-            user.avatar_url ||
-            "https://img.daisyui.com/images/profile/demo/yellingcat@192.webp";
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
 
-          nameEl.textContent = user.display_name || "User";
-
-          if (user.role && user.role.length > 0) {
-            roleEl.textContent = await fetchRole(user.role[0]);
-          } else {
-            roleEl.textContent = "Standard";
-          }
-        } catch (err) {
-          console.error(err);
+        if (!response.ok) {
+          roleEl.textContent = "Role";
+          return;
         }
+
+        const data = await response.json();
+        roleEl.textContent = data.fields.name || "Role";
       }
 
       filterMode.addEventListener("change", () => {
         updateFilterUI();
         filterShifts();
+      });
+
+      loadComponent("sidebar", "components/sidebar.html");
+
+      loadComponent("sidebar", "components/sidebar.html", () => {
+        setActiveNav();
       });
 
       startDateInput.addEventListener("change", filterShifts);
@@ -533,7 +886,6 @@
 
       shiftSearchInput.addEventListener("input", filterShifts);
 
-      loadUserHeader();
       loadShiftsTable();
       updateFilterUI();
     </script>
