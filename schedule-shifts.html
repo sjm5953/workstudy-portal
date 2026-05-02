@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CPO Portal</title>
+
+    <!-- fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- tailwind -->
+    <link href="src/output.css" rel="stylesheet" />
+
+    <!-- icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdn-uicons.flaticon.com/4.0.0/uicons-regular-rounded/css/uicons-regular-rounded.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn-uicons.flaticon.com/4.0.0/uicons-bold-rounded/css/uicons-bold-rounded.css"
+    />
+  </head>
+
+  <body class="h-screen overflow-hidden font-[Google_Sans_Flex]">
+    <!-- main container -->
+    <div class="h-screen bg-neutral-100 flex overflow-hidden">
+      <!-- SIDEBAR -->
+      <div class="flex flex-col bg-base-100 w-60 shadow-md z-10">
+        <div
+          class="h-16 flex items-center pl-8 border-b border-neutral-100 gap-1"
+        >
+          <i class="fi fi-br-e-learning pt-1 text-lg text-primary"></i>
+          <h1 class="font-black text-md uppercase">CPO Portal</h1>
+        </div>
+
+        <div class="mt-8">
+          <ul class="menu p-0 w-full space-y-2">
+            <li>
+              <a href="index.html" class="navItem"
+                ><i class="fi fi-br-apps pt-1"></i>Dashboard</a
+              >
+            </li>
+            <li>
+              <a href="announcements.html" class="navItem"
+                ><i class="fi fi-br-megaphone-sound-waves pt-1"></i
+                >Announcements</a
+              >
+            </li>
+            <li>
+              <details open>
+                <summary class="navItem">
+                  <i class="fi fi-br-calendar-day pt-1"></i>Schedule
+                </summary>
+                <div class="bg-neutral-100 py-4">
+                  <li>
+                    <a href="schedule-calendar.html" class="navItemSub"
+                      >Calendar</a
+                    >
+                  </li>
+                  <li>
+                    <a
+                      href="schedule-shifts.html"
+                      class="navItemSub navSubActive"
+                      >Scheduled Shifts</a
+                    >
+                  </li>
+                </div>
+              </details>
+            </li>
+            <li>
+              <details>
+                <summary class="navItem">
+                  <i class="fi fi-br-users pt-1"></i>Employees
+                </summary>
+                <div class="bg-neutral-100 py-4">
+                  <li>
+                    <a href="employees-active.html" class="navItemSub"
+                      >Active</a
+                    >
+                  </li>
+                  <li>
+                    <a href="employees-applicant.html" class="navItemSub"
+                      >Applicants</a
+                    >
+                  </li>
+                </div>
+              </details>
+            </li>
+            <li>
+              <details>
+                <summary class="navItem">
+                  <i class="fi fi-br-inventory-alt pt-1"></i>Inventory
+                </summary>
+                <div class="bg-neutral-100 py-4">
+                  <li><a class="navItemSub">Active</a></li>
+                  <li><a class="navItemSub">Applicants</a></li>
+                </div>
+              </details>
+            </li>
+            <li>
+              <a class="navItem"
+                ><i class="fi fi-br-document pt-1"></i>Resources</a
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- RIGHT SIDE -->
+      <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- HEADER -->
+        <div class="h-16 bg-base-100 flex items-center shadow-md px-8">
+          <div class="flex-1"></div>
+
+          <a class="btn btn-circle btn-sm bg-neutral-200 border-0 shadow-none">
+            <i class="fi fi-br-bell pt-1 opacity-60"></i>
+          </a>
+
+          <div class="divider divider-horizontal px-4 opacity-20"></div>
+
+          <!-- USER -->
+          <div class="flex items-center gap-4">
+            <div class="avatar">
+              <div class="w-8 rounded-full">
+                <img id="userAvatar" src="" />
+              </div>
+            </div>
+
+            <div class="flex flex-col">
+              <h1 id="userName" class="text-xs uppercase font-bold">
+                Loading...
+              </h1>
+              <h2 id="userRole" class="text-xs opacity-60 uppercase">
+                Loading...
+              </h2>
+            </div>
+
+            <i class="fi fi-br-angle-small-down pt-1 opacity-60"></i>
+          </div>
+        </div>
+
+        <!-- CONTENT -->
+        <div class="p-8 flex flex-col flex-1 overflow-hidden min-h-0">
+          <!-- GREEN TITLE BAR -->
+          <div
+            class="bg-base-100 shadow-md rounded-lg px-8 py-4 bg-linear-to-bl from-[#f3f520] to-[#4DB900] text-base-100 flex items-center justify-between"
+          >
+            <h1 class="uppercase font-black text-2xl">Scheduled Shifts</h1>
+
+            <button
+              class="btn btn-sm rounded-full bg-base-100 border-0 shadow-none px-6 py-1"
+            >
+              + Add Shift
+            </button>
+          </div>
+
+          <div class="mt-4">
+            <label class="input w-full rounded-lg bg-base-100 shadow-md h-12">
+              <i class="fi fi-br-search opacity-50 pt-1"></i>
+              <input
+                id="shiftSearchInput"
+                type="search"
+                class="grow"
+                placeholder="Search by name, date, or type..."
+              />
+            </label>
+          </div>
+
+          <div class="mt-4 flex gap-4 items-center flex-wrap">
+            <!-- Mode Select -->
+            <select id="filterMode" class="select select-bordered">
+              <option value="all">All</option>
+              <option value="between">Between</option>
+              <option value="status">Status</option>
+            </select>
+
+            <!-- Date Range -->
+            <div id="betweenFilters" class="hidden flex gap-2 items-center">
+              <input id="startDate" type="date" class="input input-bordered" />
+              <span class="text-xs opacity-60 uppercase">to</span>
+              <input id="endDate" type="date" class="input input-bordered" />
+            </div>
+
+            <!-- Status Filter -->
+            <div id="statusFilterWrap" class="hidden">
+              <select id="statusFilter" class="select select-bordered">
+                <option value="">All Statuses</option>
+                <option value="Unconfirmed">Unconfirmed</option>
+                <option value="Confirmed">Confirmed</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mt-4 flex-1 min-h-0">
+            <div
+              class="bg-base-100 rounded-lg shadow-md overflow-hidden h-full flex flex-col"
+            >
+              <div class="overflow-auto flex-1 min-h-0">
+                <table class="table">
+                  <thead class="sticky top-0 bg-base-100 z-10">
+                    <tr class="uppercase text-xs">
+                      <th>Workstudy</th>
+                      <th>Date</th>
+                      <th>Start</th>
+                      <th>End</th>
+                      <th>Type</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="shiftsTableBody">
+                    <tr>
+                      <td colspan="6" class="uppercase text-xs opacity-60">
+                        Loading shifts...
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCRIPT -->
+    <script>
+      const AIRTABLE_TOKEN =
+        "path5D1SLsZnikHyD.8e47f28d9b3b2913d1ebf07e9b1beb8c0903a82bb49266f19cb98fb4021b0129";
+      const BASE_ID = "appYqZMGk18beV4qI";
+
+      const USERS_TABLE = "Users";
+      const ROLES_TABLE = "Roles";
+
+      const userId = localStorage.getItem("cpoUserId");
+
+      const avatarEl = document.getElementById("userAvatar");
+      const nameEl = document.getElementById("userName");
+      const roleEl = document.getElementById("userRole");
+
+      const shiftSearchInput = document.getElementById("shiftSearchInput");
+      let allShiftRecords = [];
+
+      const filterMode = document.getElementById("filterMode");
+      const betweenFilters = document.getElementById("betweenFilters");
+      const statusFilterWrap = document.getElementById("statusFilterWrap");
+
+      const startDateInput = document.getElementById("startDate");
+      const endDateInput = document.getElementById("endDate");
+      const statusFilter = document.getElementById("statusFilter");
+
+      function updateFilterUI() {
+        const mode = filterMode.value;
+
+        betweenFilters.classList.toggle("hidden", mode !== "between");
+        statusFilterWrap.classList.toggle("hidden", mode !== "status");
+      }
+
+      function filterShifts() {
+        const searchTerm = shiftSearchInput.value.trim().toLowerCase();
+        const mode = filterMode.value;
+
+        let filtered = [...allShiftRecords];
+
+        // 🔹 MODE FILTERING
+        if (mode === "between") {
+          const start = startDateInput.value;
+          const end = endDateInput.value;
+
+          if (start && end) {
+            const startDate = new Date(start);
+            const endDate = new Date(end);
+
+            filtered = filtered.filter((record) => {
+              const shiftDate = new Date(record.fields.shift_start);
+              return shiftDate >= startDate && shiftDate <= endDate;
+            });
+          }
+        }
+
+        if (mode === "status") {
+          const selectedStatus = statusFilter.value;
+
+          if (selectedStatus) {
+            filtered = filtered.filter(
+              (record) => record.fields.shift_status === selectedStatus,
+            );
+          }
+        }
+
+        // 🔹 SEARCH FILTERING (applies on top of mode)
+        if (searchTerm) {
+          filtered = filtered.filter((record) => {
+            const f = record.fields;
+
+            const name = getWorkstudyName(f).toLowerCase();
+            const date = formatDate(f.shift_start).toLowerCase();
+            const start = formatTime(f.shift_start).toLowerCase();
+            const end = formatTime(f.shift_end).toLowerCase();
+            const type = String(f.shift_type || "").toLowerCase();
+            const status = String(f.shift_status || "").toLowerCase();
+
+            return (
+              name.includes(searchTerm) ||
+              date.includes(searchTerm) ||
+              start.includes(searchTerm) ||
+              end.includes(searchTerm) ||
+              type.includes(searchTerm) ||
+              status.includes(searchTerm)
+            );
+          });
+        }
+
+        renderShifts(filtered);
+      }
+
+      async function fetchUser() {
+        if (!userId) {
+          window.location.href = "login.html";
+          return;
+        }
+
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${USERS_TABLE}/${userId}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch user");
+        }
+
+        const data = await response.json();
+        return data.fields;
+      }
+
+      async function fetchRole(roleId) {
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${ROLES_TABLE}/${roleId}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) return "Role";
+
+        const data = await response.json();
+        return data.fields.name || "Role";
+      }
+
+      const SCHEDULE_TABLE = "Schedule";
+      const ACTIVE_WORKSTUDIES_TABLE = "Active Workstudies";
+      const shiftsTableBody = document.getElementById("shiftsTableBody");
+
+      let activeWorkstudyMap = {};
+
+      function formatDate(dateString) {
+        const date = new Date(dateString);
+        if (isNaN(date)) return "";
+
+        return date.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
+      }
+
+      function formatTime(dateString) {
+        const date = new Date(dateString);
+        if (isNaN(date)) return "";
+
+        return date.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+        });
+      }
+
+      async function fetchActiveWorkstudiesMap() {
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          ACTIVE_WORKSTUDIES_TABLE,
+        )}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch active workstudies");
+        }
+
+        const data = await response.json();
+
+        activeWorkstudyMap = {};
+        data.records.forEach((record) => {
+          activeWorkstudyMap[record.id] = record.fields.Name || "Unnamed";
+        });
+      }
+
+      function getWorkstudyName(fields) {
+        const linkedIds = fields.workstudy_name;
+
+        if (!Array.isArray(linkedIds) || linkedIds.length === 0) {
+          return "Unassigned";
+        }
+
+        return linkedIds
+          .map((id) => activeWorkstudyMap[id] || "Unknown")
+          .join(", ");
+      }
+
+      async function fetchScheduleRecords() {
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          SCHEDULE_TABLE,
+        )}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch schedule records");
+        }
+
+        const data = await response.json();
+        return data.records;
+      }
+
+      function renderShifts(records) {
+        if (records.length === 0) {
+          shiftsTableBody.innerHTML = `
+      <tr>
+        <td colspan="6" class="uppercase text-xs opacity-60">
+          No scheduled shifts found.
+        </td>
+      </tr>
+    `;
+          return;
+        }
+
+        shiftsTableBody.innerHTML = records
+          .map((record) => {
+            const fields = record.fields;
+
+            return `
+        <tr class="uppercase text-sm">
+          <td class="font-bold">${getWorkstudyName(fields)}</td>
+          <td>${formatDate(fields.shift_start)}</td>
+          <td>${formatTime(fields.shift_start)}</td>
+          <td>${formatTime(fields.shift_end)}</td>
+          <td>${fields.shift_type || ""}</td>
+          <td>
+            <span class="rounded-full px-4 py-1 text-xs ${
+              fields.shift_status === "Confirmed"
+                ? "bg-primary text-base-100 border-0"
+                : "bg-amber-400 text-neutral border-0"
+            }">
+              ${fields.shift_status || "Unconfirmed"}
+            </span>
+          </td>
+        </tr>
+      `;
+          })
+          .join("");
+      }
+
+      async function loadShiftsTable() {
+        try {
+          await fetchActiveWorkstudiesMap();
+
+          const records = await fetchScheduleRecords();
+
+          records.sort((a, b) => {
+            return (
+              new Date(a.fields.shift_start) - new Date(b.fields.shift_start)
+            );
+          });
+
+          allShiftRecords = records;
+          renderShifts(allShiftRecords);
+        } catch (error) {
+          console.error(error);
+
+          shiftsTableBody.innerHTML = `
+      <tr>
+        <td colspan="6" class="uppercase text-xs text-error font-bold">
+          Something went wrong loading shifts.
+        </td>
+      </tr>
+    `;
+        }
+      }
+
+      async function loadUserHeader() {
+        try {
+          const user = await fetchUser();
+
+          avatarEl.src =
+            user.avatar_url ||
+            "https://img.daisyui.com/images/profile/demo/yellingcat@192.webp";
+
+          nameEl.textContent = user.display_name || "User";
+
+          if (user.role && user.role.length > 0) {
+            roleEl.textContent = await fetchRole(user.role[0]);
+          } else {
+            roleEl.textContent = "Standard";
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      filterMode.addEventListener("change", () => {
+        updateFilterUI();
+        filterShifts();
+      });
+
+      startDateInput.addEventListener("change", filterShifts);
+      endDateInput.addEventListener("change", filterShifts);
+      statusFilter.addEventListener("change", filterShifts);
+
+      shiftSearchInput.addEventListener("input", filterShifts);
+
+      loadUserHeader();
+      loadShiftsTable();
+      updateFilterUI();
+    </script>
+  </body>
+</html>
