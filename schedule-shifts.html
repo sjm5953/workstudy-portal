@@ -249,6 +249,10 @@
       const endDateInput = document.getElementById("endDate");
       const statusFilter = document.getElementById("statusFilter");
 
+      const requestConfirmationBtn = document.getElementById(
+        "requestConfirmationBtn",
+      );
+
       requestConfirmationBtn.addEventListener("click", () => {
         requestStartDate.value = "";
         requestEndDate.value = "";
@@ -313,23 +317,19 @@
         const nameEl = document.getElementById("userName");
         const roleEl = document.getElementById("userRole");
 
-        try {
-          const user = await fetchUser();
+        const user = await fetchUser();
 
-          avatarEl.src =
-            user.avatar_url ||
-            "https://img.daisyui.com/images/profile/demo/yellingcat@192.webp";
+        avatarEl.src =
+          user.avatar_url ||
+          "https://img.daisyui.com/images/profile/demo/yellingcat@192.webp";
 
-          nameEl.textContent = user.display_name || "User";
+        nameEl.textContent = user.display_name || "User";
 
-          if (user.role && user.role.length > 0) {
-            roleEl.textContent = "Loading...";
-            await loadRoleName(user.role[0]);
-          } else {
-            roleEl.textContent = "Standard";
-          }
-        } catch (error) {
-          console.error(error);
+        if (user.role && user.role.length > 0) {
+          roleEl.textContent = "Loading...";
+          await loadRoleName(user.role[0]);
+        } else {
+          roleEl.textContent = "Standard";
         }
       }
 
@@ -874,10 +874,12 @@
         filterShifts();
       });
 
-      loadComponent("sidebar", "components/sidebar.html");
-
       loadComponent("sidebar", "components/sidebar.html", () => {
         setActiveNav();
+      });
+
+      loadComponent("header", "components/header.html", () => {
+        loadUserHeader();
       });
 
       startDateInput.addEventListener("change", filterShifts);
