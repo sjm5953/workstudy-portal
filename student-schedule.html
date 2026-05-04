@@ -39,12 +39,12 @@
         <div class="flex-1 flex justify-center">
           <ul class="menu menu-horizontal">
             <li>
-              <a class="stuNavItem stuNavActive" href="student-portal.html"
-                >Dashboard</a
-              >
+              <a class="stuNavItem" href="student-portal.html">Dashboard</a>
             </li>
             <li>
-              <a class="stuNavItem" href="student-schedule.html">Schedule</a>
+              <a class="stuNavItem stuNavActive" href="student-schedule.html"
+                >Schedule</a
+              >
             </li>
             <li><a class="stuNavItem">Resources</a></li>
           </ul>
@@ -86,17 +86,58 @@
           </div>
           <div class="flex-1 mt-4 flex flex-col">
             <div role="tablist" class="tabs tabs-border text-primary">
-              <a role="tab" class="tab">All Shifts</a>
-              <a role="tab" class="tab tab-active">Need Confirmation</a>
-              <a role="tab" class="tab">Requests</a>
+              <a id="allShiftsTab" role="tab" class="tab">All Shifts</a>
+              <a id="needConfirmationTab" role="tab" class="tab tab-active">
+                Need Confirmation
+              </a>
+              <a id="requestsTab" role="tab" class="tab">Requests</a>
             </div>
-            <div class="flex-1 bg-base-100 shadow-md rounded-xl mt-4">
+            <div class="flex-1 bg-base-100 shadow-md rounded-xl mt-4 p-2">
               <div id="allShiftsList" class="divide-y divide-neutral-100"></div>
+              <div
+                id="needConfirmationList"
+                class="hidden divide-y divide-neutral-100"
+              ></div>
+              <div id="requestsPanel" class="hidden">
+                <div
+                  class="px-8 py-4 border-b border-neutral-100 flex justify-end"
+                >
+                  <button
+                    id="newRequestBtn"
+                    class="btn btn-sm bg-primary text-base-100 border-0"
+                  >
+                    New Request
+                  </button>
+                </div>
+                <div
+                  id="requestsList"
+                  class="divide-y divide-neutral-100"
+                ></div>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
+
+    <dialog id="requestShiftModal" class="modal">
+      <div class="modal-box max-w-3xl">
+        <h3 class="font-black text-2xl uppercase">New Shift Request</h3>
+
+        <div id="requestShiftRows" class="mt-4 flex flex-col gap-4"></div>
+
+        <button id="addRequestRowBtn" class="btn btn-sm mt-4">
+          + Add Another Shift
+        </button>
+
+        <div class="modal-action">
+          <button id="cancelRequestBtn" class="btn">Cancel</button>
+          <button id="submitRequestBtn" class="btn bg-neutral text-base-100">
+            Submit Request
+          </button>
+        </div>
+      </div>
+    </dialog>
 
     <!-- SCRIPT -->
     <script>
@@ -113,6 +154,356 @@
       const nameEl = document.getElementById("userName");
       const roleEl = document.getElementById("userRole");
       const allShiftsList = document.getElementById("allShiftsList");
+      const allShiftsTab = document.getElementById("allShiftsTab");
+      const needConfirmationTab = document.getElementById(
+        "needConfirmationTab",
+      );
+      const needConfirmationList = document.getElementById(
+        "needConfirmationList",
+      );
+
+      const requestsTab = document.getElementById("requestsTab");
+      const requestsPanel = document.getElementById("requestsPanel");
+      const requestsList = document.getElementById("requestsList");
+
+      const requestShiftModal = document.getElementById("requestShiftModal");
+      const newRequestBtn = document.getElementById("newRequestBtn");
+      const requestShiftRows = document.getElementById("requestShiftRows");
+      const addRequestRowBtn = document.getElementById("addRequestRowBtn");
+      const cancelRequestBtn = document.getElementById("cancelRequestBtn");
+      const submitRequestBtn = document.getElementById("submitRequestBtn");
+
+      function showRequestsTab() {
+        requestsTab.classList.add("tab-active");
+        allShiftsTab.classList.remove("tab-active");
+        needConfirmationTab.classList.remove("tab-active");
+
+        requestsPanel.classList.remove("hidden");
+        allShiftsList.classList.add("hidden");
+        needConfirmationList.classList.add("hidden");
+
+        loadRequestedShifts();
+      }
+
+      function renderRequestRow() {
+        return `
+    <div class="request-row grid grid-cols-2 gap-4 bg-neutral-100 rounded-lg p-4">
+      <div>
+        <label class="label font-bold uppercase text-xs">Start</label>
+        <input type="datetime-local" class="request-start input w-full" />
+      </div>
+
+      <div>
+        <label class="label font-bold uppercase text-xs">End</label>
+        <input type="datetime-local" class="request-end input w-full" />
+      </div>
+
+      <div class="col-span-2 flex justify-end">
+        <button type="button" class="remove-request-row btn btn-xs">
+          Remove
+        </button>
+      </div>
+    </div>
+  `;
+      }
+
+      function openRequestModal() {
+        requestShiftRows.innerHTML = renderRequestRow();
+        requestShiftModal.showModal();
+      }
+
+      function closeRequestModal() {
+        requestShiftModal.close();
+        requestShiftRows.innerHTML = "";
+      }
+
+      async function createRequestedShift({ start, end }) {
+        const user = await fetchUser();
+        const linkedWorkstudies = user.linked_workstudy || [];
+
+        if (
+          !Array.isArray(linkedWorkstudies) ||
+          linkedWorkstudies.length === 0
+        ) {
+          throw new Error("No linked workstudy found for this user.");
+        }
+
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          SCHEDULE_TABLE,
+        )}`;
+
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            fields: {
+              workstudy_name: [linkedWorkstudies[0]],
+              shift_start: new Date(start).toISOString(),
+              shift_end: new Date(end).toISOString(),
+              shift_status: "Requested",
+            },
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(errorText);
+          throw new Error("Failed to create requested shift.");
+        }
+
+        return response.json();
+      }
+
+      async function fetchRequestedShifts() {
+        const allShifts = await fetchAllUserShifts();
+
+        return allShifts.filter((record) => {
+          return record.fields.shift_status === "Requested";
+        });
+      }
+
+      function renderRequestedShifts(records) {
+        if (records.length === 0) {
+          requestsList.innerHTML = `
+      <div class="px-8 py-4 text-xs uppercase opacity-60">
+        No requested shifts found.
+      </div>
+    `;
+          return;
+        }
+
+        requestsList.innerHTML = records
+          .map((record) => {
+            const fields = record.fields;
+
+            return `
+        <div class="px-8 py-4 flex items-center gap-6">
+          <div class="flex-1">
+            <h1 class="uppercase font-bold text-sm text-primary">
+              ${formatShiftDate(fields.shift_start)}
+            </h1>
+            <p class="text-sm opacity-60">
+              ${formatShiftTime(fields.shift_start)} - ${formatShiftTime(fields.shift_end)}
+            </p>
+            ${
+              fields.notes
+                ? `<p class="text-xs opacity-60 mt-1">${fields.notes}</p>`
+                : ""
+            }
+          </div>
+
+          <span class="rounded-full px-3 py-1 text-xs uppercase font-bold bg-neutral-200">
+            Requested
+          </span>
+        </div>
+      `;
+          })
+          .join("");
+      }
+
+      async function loadRequestedShifts() {
+        try {
+          const records = await fetchRequestedShifts();
+          renderRequestedShifts(records);
+        } catch (error) {
+          console.error(error);
+          requestsList.innerHTML = `
+      <div class="px-8 py-4 text-xs uppercase text-error font-bold">
+        Something went wrong loading requested shifts.
+      </div>
+    `;
+        }
+      }
+
+      newRequestBtn.addEventListener("click", openRequestModal);
+      cancelRequestBtn.addEventListener("click", closeRequestModal);
+
+      addRequestRowBtn.addEventListener("click", () => {
+        requestShiftRows.insertAdjacentHTML("beforeend", renderRequestRow());
+      });
+
+      requestShiftRows.addEventListener("click", (event) => {
+        const removeBtn = event.target.closest(".remove-request-row");
+        if (!removeBtn) return;
+
+        const rows = document.querySelectorAll(".request-row");
+        if (rows.length === 1) return;
+
+        removeBtn.closest(".request-row").remove();
+      });
+
+      submitRequestBtn.addEventListener("click", async () => {
+        const rows = Array.from(document.querySelectorAll(".request-row"));
+
+        const requests = rows.map((row) => {
+          return {
+            start: row.querySelector(".request-start").value,
+            end: row.querySelector(".request-end").value,
+          };
+        });
+
+        if (requests.some((request) => !request.start || !request.end)) {
+          alert("Please enter a start and end time for each requested shift.");
+          return;
+        }
+
+        submitRequestBtn.disabled = true;
+        submitRequestBtn.textContent = "Submitting...";
+
+        try {
+          await Promise.all(requests.map(createRequestedShift));
+
+          submitRequestBtn.disabled = false;
+          submitRequestBtn.textContent = "Submit Request";
+
+          closeRequestModal();
+          await loadRequestedShifts();
+          await loadAllUserShifts();
+        } catch (error) {
+          console.error(error);
+
+          submitRequestBtn.disabled = false;
+          submitRequestBtn.textContent = "Submit Request";
+
+          alert("Something went wrong submitting the request.");
+        }
+      });
+
+      requestsTab.addEventListener("click", showRequestsTab);
+
+      function showAllShiftsTab() {
+        allShiftsTab.classList.add("tab-active");
+        needConfirmationTab.classList.remove("tab-active");
+        requestsTab.classList.remove("tab-active");
+
+        allShiftsList.classList.remove("hidden");
+        needConfirmationList.classList.add("hidden");
+        requestsPanel.classList.add("hidden");
+      }
+
+      function showNeedConfirmationTab() {
+        needConfirmationTab.classList.add("tab-active");
+        allShiftsTab.classList.remove("tab-active");
+        requestsTab.classList.remove("tab-active");
+
+        needConfirmationList.classList.remove("hidden");
+        allShiftsList.classList.add("hidden");
+        requestsPanel.classList.add("hidden");
+
+        loadNeedConfirmationShifts();
+      }
+
+      async function updateShiftStatus(recordId, status) {
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          SCHEDULE_TABLE,
+        )}/${recordId}`;
+
+        const response = await fetch(url, {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            fields: {
+              shift_status: status,
+            },
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to update shift status");
+        }
+
+        return response.json();
+      }
+
+      async function fetchNeedConfirmationShifts() {
+        const allShifts = await fetchAllUserShifts();
+
+        return allShifts.filter((record) => {
+          return (
+            (record.fields.shift_status || "Unconfirmed") === "Unconfirmed"
+          );
+        });
+      }
+
+      function renderNeedConfirmationShifts(records) {
+        if (records.length === 0) {
+          needConfirmationList.innerHTML = `
+      <div class="px-8 py-4 text-xs uppercase opacity-60">
+        No shifts need confirmation.
+      </div>
+    `;
+          return;
+        }
+
+        needConfirmationList.innerHTML = records
+          .map((record) => {
+            const fields = record.fields;
+
+            return `
+        <div class="px-8 py-4 flex items-center gap-6">
+          <div class="flex-1">
+            <h1 class="uppercase font-bold text-sm text-primary">
+              ${formatShiftDate(fields.shift_start)}
+            </h1>
+            <p class="text-sm opacity-60">
+              ${formatShiftTime(fields.shift_start)} - ${formatShiftTime(fields.shift_end)}
+            </p>
+          </div>
+
+          <button
+            class="confirm-shift-btn btn btn-sm rounded-full bg-primary text-base-100 border-0 shadow-none uppercase font-bold"
+            data-record-id="${record.id}"
+          >
+            Confirm
+          </button>
+        </div>
+      `;
+          })
+          .join("");
+      }
+
+      async function loadNeedConfirmationShifts() {
+        try {
+          const records = await fetchNeedConfirmationShifts();
+          renderNeedConfirmationShifts(records);
+        } catch (error) {
+          console.error(error);
+
+          needConfirmationList.innerHTML = `
+      <div class="px-8 py-4 text-xs uppercase text-error font-bold">
+        Something went wrong loading shifts.
+      </div>
+    `;
+        }
+      }
+
+      document.addEventListener("click", async (event) => {
+        const confirmBtn = event.target.closest(".confirm-shift-btn");
+        if (!confirmBtn) return;
+
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = "Confirming...";
+
+        try {
+          await updateShiftStatus(confirmBtn.dataset.recordId, "Confirmed");
+          await loadNeedConfirmationShifts();
+          await loadAllUserShifts();
+        } catch (error) {
+          console.error(error);
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = "Confirm";
+          alert("Something went wrong confirming this shift.");
+        }
+      });
+
+      allShiftsTab.addEventListener("click", showAllShiftsTab);
+      needConfirmationTab.addEventListener("click", showNeedConfirmationTab);
 
       async function fetchAllUserShifts() {
         const user = await fetchUser();
@@ -179,13 +570,17 @@
             </p>
           </div>
 
-          <span class="w-fit rounded-full px-3 py-1 text-xs uppercase font-bold ${
-            fields.shift_status === "Confirmed"
-              ? "bg-primary text-base-100"
-              : "bg-amber-400 text-neutral"
-          }">
-            ${fields.shift_status || "Unconfirmed"}
-          </span>
+<span class="rounded-full px-4 py-1 text-xs uppercase ${
+              fields.shift_status === "Confirmed"
+                ? "bg-primary text-base-100"
+                : fields.shift_status === "Requested"
+                  ? "bg-sky-400 text-base-100"
+                  : fields.shift_status === "Call Out"
+                    ? "bg-red-400 text-base-100"
+                    : "bg-amber-400 text-neutral"
+            }">
+  ${fields.shift_status || "Unconfirmed"}
+</span>
         </div>
       `;
           })
@@ -244,81 +639,7 @@
         return data.fields.name || "Role";
       }
 
-      const TODO_TABLE = "To Do";
-      const todoList = document.getElementById("todoList");
-
-      async function fetchToDos() {
-        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
-          TODO_TABLE,
-        )}`;
-
-        const response = await fetch(url, {
-          headers: {
-            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch to-dos");
-        }
-
-        const data = await response.json();
-
-        return data.records.filter((record) => {
-          const linkedUsers = record.fields.user;
-
-          return Array.isArray(linkedUsers) && linkedUsers.includes(userId);
-        });
-      }
-
-      function renderToDos(records) {
-        if (records.length === 0) {
-          todoList.innerHTML = `
-      <div class="px-8 py-4 text-xs uppercase opacity-60">
-        No to-dos found.
-      </div>
-    `;
-          return;
-        }
-
-        todoList.innerHTML = records
-          .map((record) => {
-            const fields = record.fields;
-            const link = fields.confirmation_link || "#";
-
-            return `
-        <a
-          href="${link}"
-          class="px-8 py-4 flex flex-col gap-1 hover:bg-neutral-100"
-        >
-          <h1 class="uppercase font-bold text-sm text-primary">
-            ${fields.title || "Untitled To Do"}
-          </h1>
-          <p class="text-sm opacity-60">
-            ${fields.description || ""}
-          </p>
-        </a>
-      `;
-          })
-          .join("");
-      }
-
-      async function loadToDos() {
-        try {
-          const records = await fetchToDos();
-          renderToDos(records);
-        } catch (error) {
-          console.error(error);
-          todoList.innerHTML = `
-      <div class="px-8 py-4 text-xs uppercase text-error font-bold">
-        Something went wrong loading to-dos.
-      </div>
-    `;
-        }
-      }
-
       const SCHEDULE_TABLE = "Schedule";
-      const upcomingShiftsList = document.getElementById("upcomingShiftsList");
 
       function formatShiftDate(dateString) {
         const date = new Date(dateString);
@@ -339,116 +660,6 @@
           hour: "numeric",
           minute: "2-digit",
         });
-      }
-
-      async function fetchUpcomingShifts() {
-        const user = await fetchUser();
-        const linkedWorkstudies = user.linked_workstudy || [];
-
-        if (
-          !Array.isArray(linkedWorkstudies) ||
-          linkedWorkstudies.length === 0
-        ) {
-          return [];
-        }
-
-        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
-          SCHEDULE_TABLE,
-        )}`;
-
-        const response = await fetch(url, {
-          headers: {
-            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch schedule records");
-        }
-
-        const data = await response.json();
-
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const sevenDaysFromNow = new Date(today);
-        sevenDaysFromNow.setDate(today.getDate() + 7);
-        sevenDaysFromNow.setHours(23, 59, 59, 999);
-
-        return data.records
-          .filter((record) => {
-            const fields = record.fields;
-
-            const shiftStart = new Date(fields.shift_start);
-            const workstudyIds = fields.workstudy_name || [];
-
-            const belongsToUser = workstudyIds.some((id) =>
-              linkedWorkstudies.includes(id),
-            );
-
-            return (
-              belongsToUser &&
-              shiftStart >= today &&
-              shiftStart <= sevenDaysFromNow
-            );
-          })
-          .sort((a, b) => {
-            return (
-              new Date(a.fields.shift_start) - new Date(b.fields.shift_start)
-            );
-          });
-      }
-
-      function renderUpcomingShifts(records) {
-        if (records.length === 0) {
-          upcomingShiftsList.innerHTML = `
-      <div class="px-8 py-4 text-xs uppercase opacity-60">
-        No upcoming shifts found.
-      </div>
-    `;
-          return;
-        }
-
-        upcomingShiftsList.innerHTML = records
-          .map((record) => {
-            const fields = record.fields;
-
-            return `
-        <div class="px-8 py-4 flex flex-col gap-1">
-          <h1 class="uppercase font-bold text-sm text-primary">
-            ${formatShiftDate(fields.shift_start)}
-          </h1>
-
-          <p class="text-sm opacity-60">
-            ${formatShiftTime(fields.shift_start)} - ${formatShiftTime(fields.shift_end)}
-          </p>
-
-          <span class="w-fit rounded-full px-3 py-1 text-xs uppercase font-bold ${
-            fields.shift_status === "Confirmed"
-              ? "bg-primary text-base-100"
-              : "bg-amber-400 text-neutral"
-          }">
-            ${fields.shift_status || "Unconfirmed"}
-          </span>
-        </div>
-      `;
-          })
-          .join("");
-      }
-
-      async function loadUpcomingShifts() {
-        try {
-          const records = await fetchUpcomingShifts();
-          renderUpcomingShifts(records);
-        } catch (error) {
-          console.error(error);
-
-          upcomingShiftsList.innerHTML = `
-      <div class="px-8 py-4 text-xs uppercase text-error font-bold">
-        Something went wrong loading shifts.
-      </div>
-    `;
-        }
       }
 
       async function loadUserHeader() {
@@ -473,6 +684,8 @@
 
       loadUserHeader();
       loadAllUserShifts();
+      loadNeedConfirmationShifts();
+      showNeedConfirmationTab();
     </script>
   </body>
 </html>
