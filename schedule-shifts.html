@@ -353,9 +353,7 @@
       }
 
       async function createToDoRecord({ userId, startDate, endDate }) {
-        const confirmationUrl = `schedule-confirmation.html?user=${encodeURIComponent(
-          userId,
-        )}&start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(endDate)}`;
+        const confirmationUrl = "student-schedule.html";
 
         const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
           TODO_TABLE,
