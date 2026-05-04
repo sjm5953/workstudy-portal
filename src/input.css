@@ -70,3 +70,18 @@ body {
 .stat-value {
   margin-top: 12px;
 }
+
+.stuNavItem {
+  font-weight: 900;
+  text-transform: uppercase;
+  color: var(--color-neutral-400);
+}
+
+.stuNavItem:hover {
+  background-color: transparent;
+  color: var(--color-primary);
+}
+
+.stuNavActive {
+  color: var(--color-primary);
+}
