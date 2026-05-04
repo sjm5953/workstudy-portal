@@ -236,7 +236,18 @@
             user.fields.display_name || "",
           );
 
-          window.location.href = "index.html";
+          // 👇 NEW: role-based redirect
+          let roleName = null;
+
+          if (user.fields.role && user.fields.role.length > 0) {
+            roleName = await fetchRoleName(user.fields.role[0]);
+          }
+
+          if (roleName === "Student") {
+            window.location.href = "student-portal.html";
+          } else {
+            window.location.href = "index.html";
+          }
         } catch (error) {
           console.error(error);
           authMessage.textContent = "Something went wrong logging in.";
@@ -267,6 +278,21 @@
 
         const data = await response.json();
         return data.records[0];
+      }
+
+      async function fetchRoleName(roleId) {
+        const url = `https://api.airtable.com/v0/${BASE_ID}/Roles/${roleId}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) return null;
+
+        const data = await response.json();
+        return data.fields.name;
       }
     </script>
   </body>

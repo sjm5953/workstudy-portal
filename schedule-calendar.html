@@ -33,15 +33,19 @@
         <!--header-->
         <div id="header"></div>
         <!--content-->
-        <div class="overflow-y-auto flex flex-col flex-1">
+        <div class="flex flex-col flex-1 overflow-hidden min-h-0">
           <div
             class="bg-base-100 shadow-md rounded-lg px-8 py-4 bg-linear-to-bl from-[#f3f520] to-[#4DB900] text-base-100 from-10% flex items-center justify-between mx-8 mt-8"
           >
             <h1 class="uppercase font-black text-2xl">Calendar</h1>
           </div>
-          <div class="mt-4 flex-1 bg-base-100 mx-8 rounded-lg shadow-md">
+          <div
+            class="my-8 flex-1 min-h-0 bg-base-100 mx-8 rounded-lg shadow-md overflow-hidden"
+          >
             <!--calendar-->
-            <div class="bg-base-100 rounded-lg overflow-hidden">
+            <div
+              class="bg-base-100 rounded-lg h-full flex flex-col overflow-hidden"
+            >
               <div
                 class="px-6 py-4 border-b border-neutral-200 flex items-center gap-4"
               >
@@ -59,6 +63,14 @@
                   Loading...
                 </h2>
 
+                <select
+                  id="calendarViewSelect"
+                  class="select select-bordered select-sm w-30"
+                >
+                  <option value="day">Day</option>
+                  <option value="week">Week</option>
+                </select>
+
                 <button id="todayBtn" class="btn btn-sm rounded-full">
                   Today
                 </button>
@@ -71,7 +83,7 @@
                 </button>
               </div>
 
-              <div class="overflow-x-auto">
+              <div class="flex-1 min-h-0 overflow-auto">
                 <div id="scheduleCalendar" class="min-w-[1600px]"></div>
               </div>
             </div>
@@ -209,6 +221,180 @@
       const avatarEl = document.getElementById("userAvatar");
       const nameEl = document.getElementById("userName");
       const roleEl = document.getElementById("userRole");
+
+      const calendarViewSelect = document.getElementById("calendarViewSelect");
+      let calendarView = "day";
+
+      function getMonday(date) {
+        const d = new Date(date);
+        d.setHours(0, 0, 0, 0);
+
+        const day = d.getDay();
+        const diff = day === 0 ? -6 : 1 - day;
+
+        d.setDate(d.getDate() + diff);
+        return d;
+      }
+
+      function getWeekDays(date) {
+        const monday = getMonday(date);
+
+        return Array.from({ length: 6 }, (_, index) => {
+          const day = new Date(monday);
+          day.setDate(monday.getDate() + index);
+          return day;
+        });
+      }
+
+      function isSameDate(a, b) {
+        return (
+          a.getFullYear() === b.getFullYear() &&
+          a.getMonth() === b.getMonth() &&
+          a.getDate() === b.getDate()
+        );
+      }
+
+      function renderWeekCalendar(shifts, workstudyMap) {
+        const weekDays = getWeekDays(viewedDate);
+
+        const weekStart = weekDays[0];
+        const weekEnd = weekDays[5];
+
+        currentDayLabel.textContent = `${formatDayLabel(weekStart)} - ${formatDayLabel(
+          weekEnd,
+        )}`;
+
+        const weekStartHour = 7;
+        const weekEndHour = 19;
+        const hourHeight = 72;
+        const dayColWidth = 220;
+        const timeColWidth = 90;
+
+        const totalHours = weekEndHour - weekStartHour;
+        const gridHeight = totalHours * hourHeight;
+
+        const hours = Array.from({ length: totalHours + 1 }, (_, index) => {
+          return weekStartHour + index;
+        });
+
+        const dayColumns = weekDays
+          .map((day) => {
+            const dayShifts = shifts.filter((record) => {
+              return isSameDate(new Date(record.fields.shift_start), day);
+            });
+
+            const layeredDayShifts = assignOverlapColumns(dayShifts);
+
+            const bars = layeredDayShifts
+              .map(({ record, columnIndex, columnCount }) => {
+                const fields = record.fields;
+                const start = new Date(fields.shift_start);
+                const end = new Date(fields.shift_end);
+
+                const startMinutes =
+                  (start.getHours() - weekStartHour) * 60 + start.getMinutes();
+                const durationMinutes = Math.max(30, (end - start) / 60000);
+
+                const top = (startMinutes / 60) * hourHeight;
+                const height = (durationMinutes / 60) * hourHeight;
+
+                const status = fields.shift_status || "Unconfirmed";
+
+                const barColorClass =
+                  status === "Confirmed"
+                    ? "bg-primary text-base-100"
+                    : "bg-amber-400 text-neutral";
+
+                return `
+  <div
+    class="absolute rounded-lg ${barColorClass} px-3 py-2 shadow-sm overflow-hidden"
+    style="
+  top:${top}px;
+  height:${height}px;
+  left: calc(${(columnIndex / columnCount) * 100}% + 4px);
+  width: calc(${100 / columnCount}% - 8px);
+"
+            >
+              <p class="text-[11px] font-black uppercase truncate">
+                ${getWorkstudyName(fields, workstudyMap)}
+              </p>
+              <p class="text-[10px] font-bold uppercase opacity-80 truncate">
+                ${formatShiftTime(fields.shift_start)} - ${formatShiftTime(fields.shift_end)}
+              </p>
+            </div>
+          `;
+              })
+              .join("");
+
+            return `
+        <div class="relative border-r border-neutral-100" style="height:${gridHeight}px;">
+          ${bars}
+        </div>
+      `;
+          })
+          .join("");
+
+        calendarEl.innerHTML = `
+    <div
+      class="grid bg-base-100 sticky top-0 z-30 border-b border-neutral-200"
+      style="grid-template-columns:${timeColWidth}px repeat(6, ${dayColWidth}px);"
+    >
+      <div class="px-4 py-3 border-r border-neutral-200"></div>
+
+      ${weekDays
+        .map(
+          (day) => `
+            <div class="px-4 py-3 border-r border-neutral-100">
+              <p class="text-xs font-black uppercase">
+                ${day.toLocaleDateString("en-US", { weekday: "short" })}
+              </p>
+              <p class="text-[10px] uppercase opacity-60">
+                ${day.toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                })}
+              </p>
+            </div>
+          `,
+        )
+        .join("")}
+    </div>
+
+    <div
+      class="grid"
+      style="grid-template-columns:${timeColWidth}px repeat(6, ${dayColWidth}px);"
+    >
+      <div class="relative border-r border-neutral-200" style="height:${gridHeight}px;">
+        ${hours
+          .map((hour, index) => {
+            const top = index * hourHeight;
+
+            return `
+              <div
+                class="absolute left-0 right-0 px-4 text-[10px] font-black uppercase opacity-60"
+                style="top:${top}px;"
+              >
+                ${formatTimeLabel(hour, 0)}
+              </div>
+            `;
+          })
+          .join("")}
+      </div>
+
+      <div
+        class="col-span-6 grid relative"
+        style="
+          grid-template-columns: repeat(6, ${dayColWidth}px);
+          height:${gridHeight}px;
+          background-image: linear-gradient(to bottom, rgba(0,0,0,.08) 1px, transparent 1px);
+          background-size: 100% ${hourHeight}px;
+        "
+      >
+        ${dayColumns}
+      </div>
+    </div>
+  `;
+      }
 
       function setActiveNav() {
         const currentPage = window.location.pathname.split("/").pop();
@@ -643,7 +829,7 @@
           saveNewShiftBtn.disabled = false;
           saveNewShiftBtn.textContent = "Save Shift";
 
-          await loadDaySchedule();
+          await loadScheduleView();
         } catch (error) {
           console.error(error);
 
@@ -653,6 +839,42 @@
           alert("Something went wrong creating the shift.");
         }
       });
+
+      function assignOverlapColumns(records) {
+        const sorted = [...records].sort((a, b) => {
+          return (
+            new Date(a.fields.shift_start) - new Date(b.fields.shift_start)
+          );
+        });
+
+        const activeColumns = [];
+
+        return sorted.map((record) => {
+          const start = new Date(record.fields.shift_start);
+          const end = new Date(record.fields.shift_end);
+
+          for (let i = activeColumns.length - 1; i >= 0; i--) {
+            if (activeColumns[i] <= start) {
+              activeColumns[i] = null;
+            }
+          }
+
+          let columnIndex = activeColumns.findIndex((value) => value === null);
+
+          if (columnIndex === -1) {
+            columnIndex = activeColumns.length;
+            activeColumns.push(end);
+          } else {
+            activeColumns[columnIndex] = end;
+          }
+
+          return {
+            record,
+            columnIndex,
+            columnCount: activeColumns.filter(Boolean).length,
+          };
+        });
+      }
 
       function renderCalendar(shifts, workstudyMap) {
         const slots = getSlots();
@@ -741,7 +963,7 @@
     >
       <div
         class="absolute top-3 h-10 rounded-full ${barColorClass} px-4 flex items-center shadow-sm"
-        style="left:${left}px; width:${width}px;"
+style="left:${left}px; width:${width}px;"
       >
         <span class="text-xs font-black uppercase truncate">
           ${name} · ${formatShiftTime(fields.shift_start)} - ${formatShiftTime(fields.shift_end)}
@@ -847,30 +1069,53 @@ ${draftRow}
         roleEl.textContent = data.fields.name || "Role";
       }
 
-      async function loadDaySchedule() {
+      async function loadScheduleView() {
         calendarEl.innerHTML = `
-      <div class="p-8">
-        <p class="uppercase text-sm font-bold opacity-60">Loading schedule...</p>
-      </div>
-    `;
+    <div class="p-8">
+      <p class="uppercase text-sm font-bold opacity-60">Loading schedule...</p>
+    </div>
+  `;
 
-        const dayString = formatDateForAirtable(viewedDate);
         const [allRecords, workstudyMap] = await Promise.all([
           fetchScheduleRecords(),
-
           fetchActiveWorkstudiesMap(),
         ]);
 
-        const shiftsForDay = allRecords
+        if (calendarView === "day") {
+          const dayString = formatDateForAirtable(viewedDate);
+
+          const shiftsForDay = allRecords
+            .filter((record) => {
+              const fields = record.fields;
+              if (!fields.shift_start || !fields.shift_end) return false;
+
+              const recordDay = formatDateForAirtable(
+                new Date(fields.shift_start),
+              );
+              return recordDay === dayString;
+            })
+            .sort((a, b) => {
+              return (
+                new Date(a.fields.shift_start) - new Date(b.fields.shift_start)
+              );
+            });
+
+          renderCalendar(shiftsForDay, workstudyMap);
+          return;
+        }
+
+        const weekDays = getWeekDays(viewedDate);
+        const weekStart = weekDays[0];
+        const weekEnd = new Date(weekDays[5]);
+        weekEnd.setHours(23, 59, 59, 999);
+
+        const shiftsForWeek = allRecords
           .filter((record) => {
             const fields = record.fields;
-
             if (!fields.shift_start || !fields.shift_end) return false;
 
-            const shiftDate = fields.shift_date || fields.shift_start;
-            const recordDay = formatDateForAirtable(new Date(shiftDate));
-
-            return recordDay === dayString;
+            const shiftStart = new Date(fields.shift_start);
+            return shiftStart >= weekStart && shiftStart <= weekEnd;
           })
           .sort((a, b) => {
             return (
@@ -878,34 +1123,49 @@ ${draftRow}
             );
           });
 
-        renderCalendar(shiftsForDay, workstudyMap);
+        renderWeekCalendar(shiftsForWeek, workstudyMap);
       }
 
       prevDayBtn.addEventListener("click", () => {
-        viewedDate.setDate(viewedDate.getDate() - 1);
-        loadDaySchedule();
+        if (calendarView === "week") {
+          viewedDate.setDate(viewedDate.getDate() - 7);
+        } else {
+          viewedDate.setDate(viewedDate.getDate() - 1);
+        }
+
+        loadScheduleView();
       });
 
       nextDayBtn.addEventListener("click", () => {
-        viewedDate.setDate(viewedDate.getDate() + 1);
-        loadDaySchedule();
+        if (calendarView === "week") {
+          viewedDate.setDate(viewedDate.getDate() + 7);
+        } else {
+          viewedDate.setDate(viewedDate.getDate() + 1);
+        }
+
+        loadScheduleView();
       });
 
       todayBtn.addEventListener("click", () => {
         viewedDate = new Date();
         viewedDate.setHours(0, 0, 0, 0);
-        loadDaySchedule();
+        loadScheduleView();
       });
 
-      loadComponent("sidebar", "components/sidebar.html");
+      calendarViewSelect.addEventListener("change", () => {
+        calendarView = calendarViewSelect.value;
+        loadScheduleView();
+      });
 
       loadComponent("sidebar", "components/sidebar.html", () => {
         setActiveNav();
       });
 
-      loadUserHeader();
+      loadComponent("header", "components/header.html", () => {
+        loadUserHeader();
+      });
 
-      loadDaySchedule().catch((error) => {
+      loadScheduleView().catch((error) => {
         console.error(error);
         calendarEl.innerHTML = `
       <div class="p-8">
