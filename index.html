@@ -506,6 +506,12 @@
         loadUserHeader();
       });
 
+      document.getElementById("logoutBtn").addEventListener("click", () => {
+        localStorage.removeItem("cpoUserId");
+        localStorage.removeItem("cpoUserEmail");
+        localStorage.removeItem("cpoDisplayName");
+      });
+
       loadActiveWorkstudiesCount();
       loadApplicantsCount();
       loadAnnouncements();

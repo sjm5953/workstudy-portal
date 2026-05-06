@@ -294,6 +294,40 @@
         const data = await response.json();
         return data.fields.name;
       }
+
+      // LOGIN ENTER KEY
+      document
+        .getElementById("loginEmail")
+        .addEventListener("keydown", handleLoginEnter);
+
+      document
+        .getElementById("loginPassword")
+        .addEventListener("keydown", handleLoginEnter);
+
+      function handleLoginEnter(event) {
+        if (event.key === "Enter") {
+          loginBtn.click();
+        }
+      }
+
+      // SIGNUP ENTER KEY
+      document
+        .getElementById("signupEmail")
+        .addEventListener("keydown", handleSignupEnter);
+
+      document
+        .getElementById("signupDisplayName")
+        .addEventListener("keydown", handleSignupEnter);
+
+      document
+        .getElementById("signupPassword")
+        .addEventListener("keydown", handleSignupEnter);
+
+      function handleSignupEnter(event) {
+        if (event.key === "Enter") {
+          signupBtn.click();
+        }
+      }
     </script>
   </body>
 </html>

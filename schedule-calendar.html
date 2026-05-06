@@ -1402,6 +1402,12 @@ ${draftRow}
       </div>
     `;
       });
+
+      document.getElementById("logoutBtn").addEventListener("click", () => {
+        localStorage.removeItem("cpoUserId");
+        localStorage.removeItem("cpoUserEmail");
+        localStorage.removeItem("cpoDisplayName");
+      });
     </script>
   </body>
 </html>
