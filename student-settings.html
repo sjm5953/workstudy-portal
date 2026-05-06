@@ -28,15 +28,39 @@
   </head>
 
   <body class="h-screen overflow-hidden font-[Google_Sans_Flex]">
+    <div class="dock md:hidden h-20">
+      <a href="student-portal.html" class="">
+        <i class="fi fi-br-apps pt-1 mb-1"></i>
+        <span class="dock-label uppercase font-bold leading-1 mb-3"
+          >Dashboard</span
+        >
+      </a>
+      <a href="student-schedule.html">
+        <i class="fi fi-br-calendar-clock pt-1 mb-1"></i>
+        <span class="dock-label uppercase font-bold leading-1 mb-3"
+          >Schedule</span
+        >
+      </a>
+      <a href="resources.html">
+        <i class="fi fi-br-folder pt-1 mb-1"></i>
+        <span class="dock-label uppercase font-bold leading-1 mb-3"
+          >Resources</span
+        >
+      </a>
+    </div>
     <!-- main container -->
     <div class="flex flex-col bg-neutral-100 h-full">
       <!--topnav-->
       <div class="h-16 bg-base-100 flex items-center shadow-md px-8">
-        <div class="flex items-center gap-1">
-          <i class="fi fi-br-e-learning pt-1 text-lg text-primary"></i>
-          <h1 class="font-black text-md uppercase">CPO Portal</h1>
+        <div class="flex items-center gap-1 flex-1 md:flex-0">
+          <i
+            class="fi fi-br-e-learning pt-1 md:text-lg text-3xl text-primary"
+          ></i>
+          <h1 class="font-black text-md uppercase hidden md:flex w-30">
+            CPO Portal
+          </h1>
         </div>
-        <div class="flex-1 flex justify-center">
+        <div class="flex-0 md:flex-1 flex justify-center hidden md:flex">
           <ul class="menu menu-horizontal">
             <li>
               <a class="stuNavItem" href="student-portal.html">Dashboard</a>
@@ -48,11 +72,13 @@
           </ul>
         </div>
 
-        <a class="btn btn-circle btn-sm bg-neutral-200 border-0 shadow-none">
+        <a
+          class="btn btn-circle btn-sm bg-neutral-200 border-0 shadow-none hidden"
+        >
           <i class="fi fi-br-bell pt-1 opacity-60"></i>
         </a>
 
-        <div class="divider divider-horizontal px-4 opacity-20"></div>
+        <div class="divider divider-horizontal px-4 opacity-20 hidden"></div>
 
         <!-- USER -->
         <div class="dropdown dropdown-end">
@@ -85,7 +111,7 @@
             class="dropdown-content menu bg-base-100 rounded-box z-[100] w-52 p-2 shadow-xl border border-neutral-200 mt-2 uppercase text-xs font-bold"
           >
             <li>
-              <a href="settings.html">
+              <a href="student-settings.html">
                 <i class="fi fi-br-settings"></i>
                 Settings
               </a>
