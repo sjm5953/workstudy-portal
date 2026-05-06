@@ -77,14 +77,14 @@
         </div>
       </div>
       <!--body-->
-      <div class="flex-1 flex justify-center py-8">
-        <div class="w-full max-w-5xl px-8 md:px-0 flex flex-col">
+      <div class="flex-1 min-h-0 flex justify-center py-8 overflow-hidden">
+        <div class="w-full max-w-5xl px-8 md:px-0 flex flex-col min-h-0">
           <div
             class="bg-base-100 shadow-md rounded-lg px-8 py-4 bg-linear-to-bl from-[#f3f520] to-[#4DB900] text-base-100 flex items-center justify-between"
           >
             <h1 class="uppercase font-black text-2xl">Welcome, firstname</h1>
           </div>
-          <div class="flex-1 mt-4 flex flex-col">
+          <div class="flex-1 min-h-0 mt-4 flex flex-col">
             <div role="tablist" class="tabs tabs-border text-primary">
               <a id="allShiftsTab" role="tab" class="tab">All Shifts</a>
               <a id="needConfirmationTab" role="tab" class="tab tab-active">
@@ -92,13 +92,21 @@
               </a>
               <a id="requestsTab" role="tab" class="tab">Requests</a>
             </div>
-            <div class="flex-1 bg-base-100 shadow-md rounded-xl mt-4 p-2">
-              <div id="allShiftsList" class="divide-y divide-neutral-100"></div>
+            <div
+              class="flex-1 min-h-0 bg-base-100 shadow-md rounded-xl mt-4 p-2 overflow-hidden"
+            >
+              <div
+                id="allShiftsList"
+                class="h-full overflow-y-auto divide-y divide-neutral-100"
+              ></div>
               <div
                 id="needConfirmationList"
-                class="hidden divide-y divide-neutral-100"
+                class="hidden h-full overflow-y-auto divide-y divide-neutral-100"
               ></div>
-              <div id="requestsPanel" class="hidden">
+              <div
+                id="requestsPanel"
+                class="hidden h-full flex flex-col min-h-0"
+              >
                 <div
                   class="px-8 py-4 border-b border-neutral-100 flex justify-end"
                 >
@@ -111,7 +119,7 @@
                 </div>
                 <div
                   id="requestsList"
-                  class="divide-y divide-neutral-100"
+                  class="flex-1 min-h-0 overflow-y-auto divide-y divide-neutral-100"
                 ></div>
               </div>
             </div>

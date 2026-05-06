@@ -2672,6 +2672,9 @@
   .pt-1 {
     padding-top: calc(var(--spacing) * 1);
   }
+  .pr-2 {
+    padding-right: calc(var(--spacing) * 2);
+  }
   .pl-0 {
     padding-left: calc(var(--spacing) * 0);
   }

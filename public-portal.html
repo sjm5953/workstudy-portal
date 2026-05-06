@@ -118,7 +118,7 @@
                 class="select select-sm select-bordered bg-base-100 text-neutral"
               >
                 <option value="week">Week</option>
-                <option value="day">Day</option>
+                <option value="day" selected>Day</option>
               </select>
 
               <button
@@ -173,7 +173,7 @@
       const todayWeekBtn = document.getElementById("todayWeekBtn");
 
       const calendarViewSelect = document.getElementById("calendarViewSelect");
-      let calendarView = "week";
+      let calendarView = "day";
 
       let viewedDate = new Date();
       viewedDate.setHours(0, 0, 0, 0);
