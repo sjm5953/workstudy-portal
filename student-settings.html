@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en" data-theme="green">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CPO Portal</title>
+
+    <!-- fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- tailwind -->
+    <link href="src/output.css" rel="stylesheet" />
+
+    <!-- icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdn-uicons.flaticon.com/4.0.0/uicons-regular-rounded/css/uicons-regular-rounded.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn-uicons.flaticon.com/4.0.0/uicons-bold-rounded/css/uicons-bold-rounded.css"
+    />
+  </head>
+
+  <body class="h-screen overflow-hidden font-[Google_Sans_Flex]">
+    <!-- main container -->
+    <div class="flex flex-col bg-neutral-100 h-full">
+      <!--topnav-->
+      <div class="h-16 bg-base-100 flex items-center shadow-md px-8">
+        <div class="flex items-center gap-1">
+          <i class="fi fi-br-e-learning pt-1 text-lg text-primary"></i>
+          <h1 class="font-black text-md uppercase">CPO Portal</h1>
+        </div>
+        <div class="flex-1 flex justify-center">
+          <ul class="menu menu-horizontal">
+            <li>
+              <a class="stuNavItem" href="student-portal.html">Dashboard</a>
+            </li>
+            <li>
+              <a class="stuNavItem" href="student-schedule.html">Schedule</a>
+            </li>
+            <li><a class="stuNavItem">Resources</a></li>
+          </ul>
+        </div>
+
+        <a class="btn btn-circle btn-sm bg-neutral-200 border-0 shadow-none">
+          <i class="fi fi-br-bell pt-1 opacity-60"></i>
+        </a>
+
+        <div class="divider divider-horizontal px-4 opacity-20"></div>
+
+        <!-- USER -->
+        <div class="dropdown dropdown-end">
+          <div
+            id="userContainer"
+            tabindex="0"
+            role="button"
+            class="flex items-center gap-4 cursor-pointer hover:bg-neutral-100 rounded-xl px-3 py-2 transition-colors"
+          >
+            <div class="avatar">
+              <div class="w-8 rounded-full">
+                <img id="userAvatar" src="" />
+              </div>
+            </div>
+
+            <div class="flex flex-col">
+              <h1 id="userName" class="text-xs uppercase font-bold">
+                Loading...
+              </h1>
+              <h2 id="userRole" class="text-xs opacity-60 uppercase">
+                Loading...
+              </h2>
+            </div>
+
+            <i class="fi fi-br-angle-small-down pt-1 opacity-60"></i>
+          </div>
+
+          <ul
+            tabindex="0"
+            class="dropdown-content menu bg-base-100 rounded-box z-[100] w-52 p-2 shadow-xl border border-neutral-200 mt-2 uppercase text-xs font-bold"
+          >
+            <li>
+              <a href="settings.html">
+                <i class="fi fi-br-settings"></i>
+                Settings
+              </a>
+            </li>
+
+            <li>
+              <a id="logoutBtn" href="auth.html">
+                <i class="fi fi-br-sign-out-alt"></i>
+                Logout
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <!--body-->
+      <div class="flex-1 overflow-y-auto flex flex-col items-center py-8">
+        <div class="w-full max-w-5xl px-8 md:px-0">
+          <div
+            class="bg-base-100 shadow-md rounded-lg px-8 py-4 bg-linear-to-bl from-[#f3f520] to-[#4DB900] text-base-100 flex items-center justify-between"
+          >
+            <h1 class="uppercase font-black text-2xl">Settings</h1>
+          </div>
+
+          <div class="bg-base-100 shadow-md rounded-lg mt-8">
+            <div class="px-8 py-4 border-b border-neutral-100">
+              <h2 class="uppercase font-bold text-md">Account Information</h2>
+            </div>
+
+            <div class="p-8 grid gap-4">
+              <div>
+                <p class="text-xs uppercase font-bold opacity-60">Email</p>
+                <p id="settingsEmail" class="font-semibold">Loading...</p>
+              </div>
+
+              <div>
+                <p class="text-xs uppercase font-bold opacity-60">
+                  Display Name
+                </p>
+                <p id="settingsDisplayName" class="font-semibold">Loading...</p>
+              </div>
+
+              <div>
+                <p class="text-xs uppercase font-bold opacity-60">Role</p>
+                <p id="settingsRole" class="font-semibold">Loading...</p>
+              </div>
+
+              <div class="pt-4">
+                <button
+                  class="btn bg-primary text-base-100 border-0 uppercase"
+                  onclick="passwordModal.showModal()"
+                >
+                  Change Password
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <dialog id="passwordModal" class="modal">
+        <div class="modal-box">
+          <h3 class="font-bold text-lg uppercase">Change Password</h3>
+
+          <div class="py-4 flex flex-col gap-4">
+            <label class="form-control">
+              <div class="label">
+                <span class="label-text uppercase font-bold text-xs"
+                  >New Password</span
+                >
+              </div>
+              <input
+                id="newPasswordInput"
+                type="password"
+                class="input input-bordered"
+                placeholder="Enter new password"
+              />
+            </label>
+
+            <label class="form-control">
+              <div class="label">
+                <span class="label-text uppercase font-bold text-xs"
+                  >Confirm Password</span
+                >
+              </div>
+              <input
+                id="confirmPasswordInput"
+                type="password"
+                class="input input-bordered"
+                placeholder="Confirm new password"
+              />
+            </label>
+
+            <p id="passwordMessage" class="text-sm font-bold"></p>
+          </div>
+
+          <div class="modal-action">
+            <form method="dialog">
+              <button class="btn">Cancel</button>
+            </form>
+            <button
+              id="savePasswordBtn"
+              class="btn bg-primary text-base-100 border-0"
+            >
+              Save Password
+            </button>
+          </div>
+        </div>
+      </dialog>
+    </div>
+    <script>
+      const AIRTABLE_TOKEN =
+        "path5D1SLsZnikHyD.8e47f28d9b3b2913d1ebf07e9b1beb8c0903a82bb49266f19cb98fb4021b0129";
+      const BASE_ID = "appYqZMGk18beV4qI";
+      const USERS_TABLE = "Users";
+      const ROLES_TABLE = "Roles";
+
+      const userId = localStorage.getItem("cpoUserId");
+
+      const avatarEl = document.getElementById("userAvatar");
+      const nameEl = document.getElementById("userName");
+      const roleEl = document.getElementById("userRole");
+
+      if (!userId) {
+        window.location.replace("auth.html");
+      }
+
+      async function fetchUser() {
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${USERS_TABLE}/${userId}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          localStorage.clear();
+          window.location.replace("auth.html");
+          return null;
+        }
+
+        const data = await response.json();
+        return data;
+      }
+
+      async function fetchRole(roleId) {
+        if (!roleId) return "Standard";
+
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${ROLES_TABLE}/${roleId}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) return "Role";
+
+        const data = await response.json();
+        return data.fields.name || "Role";
+      }
+
+      async function loadSettings() {
+        const userRecord = await fetchUser();
+        if (!userRecord) return;
+
+        const user = userRecord.fields;
+
+        // SETTINGS CARD
+        document.getElementById("settingsEmail").textContent =
+          user.email || "No email found";
+
+        document.getElementById("settingsDisplayName").textContent =
+          user.display_name || "User";
+
+        const roleName =
+          user.role && user.role.length > 0
+            ? await fetchRole(user.role[0])
+            : "Standard";
+
+        document.getElementById("settingsRole").textContent = roleName;
+
+        // TOP NAV USER INFO
+        avatarEl.src =
+          user.avatar_url ||
+          "https://img.daisyui.com/images/profile/demo/yellingcat@192.webp";
+
+        nameEl.textContent = user.display_name || "User";
+
+        roleEl.textContent = roleName;
+      }
+
+      document
+        .getElementById("savePasswordBtn")
+        .addEventListener("click", async () => {
+          const newPassword = document.getElementById("newPasswordInput").value;
+          const confirmPassword = document.getElementById(
+            "confirmPasswordInput",
+          ).value;
+          const message = document.getElementById("passwordMessage");
+
+          if (!newPassword || !confirmPassword) {
+            message.textContent = "Please fill out both password fields.";
+            message.className = "text-sm font-bold text-error";
+            return;
+          }
+
+          if (newPassword !== confirmPassword) {
+            message.textContent = "Passwords do not match.";
+            message.className = "text-sm font-bold text-error";
+            return;
+          }
+
+          const url = `https://api.airtable.com/v0/${BASE_ID}/${USERS_TABLE}/${userId}`;
+
+          const response = await fetch(url, {
+            method: "PATCH",
+            headers: {
+              Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              fields: {
+                password: newPassword,
+              },
+            }),
+          });
+
+          if (!response.ok) {
+            message.textContent = "Could not update password.";
+            message.className = "text-sm font-bold text-error";
+            return;
+          }
+
+          message.textContent = "Password updated successfully.";
+          message.className = "text-sm font-bold text-primary";
+
+          document.getElementById("newPasswordInput").value = "";
+          document.getElementById("confirmPasswordInput").value = "";
+        });
+
+      loadSettings();
+    </script>
+  </body>
+</html>

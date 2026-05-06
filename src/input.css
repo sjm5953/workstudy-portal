@@ -85,3 +85,11 @@ body {
 .stuNavActive {
   color: var(--color-primary);
 }
+
+.dock-active i {
+  color: var(--color-primary);
+}
+
+.dock-active::after {
+  background-color: var(--color-primary);
+}

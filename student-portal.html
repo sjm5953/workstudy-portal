@@ -28,15 +28,39 @@
   </head>
 
   <body class="h-screen overflow-hidden font-[Google_Sans_Flex]">
+    <div class="dock md:hidden h-20">
+      <button class="dock-active">
+        <i class="fi fi-br-apps pt-1 mb-1"></i>
+        <span class="dock-label uppercase font-bold leading-1 mb-3"
+          >Dashboard</span
+        >
+      </button>
+      <button class="">
+        <i class="fi fi-br-calendar-clock pt-1 mb-1"></i>
+        <span class="dock-label uppercase font-bold leading-1 mb-3"
+          >Schedule</span
+        >
+      </button>
+      <button class="">
+        <i class="fi fi-br-folder pt-1 mb-1"></i>
+        <span class="dock-label uppercase font-bold leading-1 mb-3"
+          >Resources</span
+        >
+      </button>
+    </div>
     <!-- main container -->
     <div class="flex flex-col bg-neutral-100 h-full">
       <!--topnav-->
       <div class="h-16 bg-base-100 flex items-center shadow-md px-8">
-        <div class="flex items-center gap-1">
-          <i class="fi fi-br-e-learning pt-1 text-lg text-primary"></i>
-          <h1 class="font-black text-md uppercase">CPO Portal</h1>
+        <div class="flex items-center gap-1 flex-1 md:flex-0">
+          <i
+            class="fi fi-br-e-learning pt-1 md:text-lg text-3xl text-primary"
+          ></i>
+          <h1 class="font-black text-md uppercase hidden md:flex w-30">
+            CPO Portal
+          </h1>
         </div>
-        <div class="flex-1 flex justify-center">
+        <div class="flex-0 md:flex-1 flex justify-center hidden md:flex">
           <ul class="menu menu-horizontal">
             <li>
               <a class="stuNavItem stuNavActive" href="student-portal.html"
@@ -50,11 +74,13 @@
           </ul>
         </div>
 
-        <a class="btn btn-circle btn-sm bg-neutral-200 border-0 shadow-none">
+        <a
+          class="btn btn-circle btn-sm bg-neutral-200 border-0 shadow-none hidden"
+        >
           <i class="fi fi-br-bell pt-1 opacity-60"></i>
         </a>
 
-        <div class="divider divider-horizontal px-4 opacity-20"></div>
+        <div class="divider divider-horizontal px-4 opacity-20 hidden"></div>
 
         <!-- USER -->
         <div class="dropdown dropdown-end">
@@ -87,7 +113,7 @@
             class="dropdown-content menu bg-base-100 rounded-box z-[100] w-52 p-2 shadow-xl border border-neutral-200 mt-2 uppercase text-xs font-bold"
           >
             <li>
-              <a href="settings.html">
+              <a href="student-settings.html">
                 <i class="fi fi-br-settings"></i>
                 Settings
               </a>
@@ -103,7 +129,9 @@
         </div>
       </div>
       <!--body-->
-      <div class="flex-1 overflow-y-auto flex flex-col items-center py-8">
+      <div
+        class="flex-1 overflow-y-auto flex flex-col items-center py-8 mb-20 md:mb-0"
+      >
         <div class="w-full max-w-5xl px-8 md:px-0">
           <div
             class="bg-base-100 shadow-md rounded-lg px-8 py-4 bg-linear-to-bl from-[#f3f520] to-[#4DB900] text-base-100 flex items-center justify-between"
@@ -138,7 +166,7 @@
             </div>
             <!--upcoming shifts card-->
             <div
-              class="bg-base-100 shadow-md rounded-lg flex flex-col row-start-2"
+              class="bg-base-100 shadow-md rounded-lg flex flex-col md:row-start-2"
             >
               <div
                 class="flex items-center justify-between px-8 py-4 border-b border-neutral-100"
@@ -166,7 +194,7 @@
             </div>
             <!--actions card-->
             <div
-              class="bg-base-100 shadow-md rounded-lg flex flex-col col-start-2 row-start-1 row-span-2"
+              class="bg-base-100 shadow-md rounded-lg flex flex-col md:col-start-2 md:row-start-1 md:row-span-2"
             >
               <div
                 class="flex items-center justify-between px-8 py-4 border-b border-neutral-100"
@@ -176,13 +204,16 @@
               <div class="px-8 py-2">
                 <ul class="menu w-full uppercase font-bold">
                   <li>
-                    <a class="hover:bg-transparent text-primary pl-0"
+                    <a
+                      href="student-schedule.html"
+                      class="hover:bg-transparent text-primary pl-0"
                       ><i class="fi fi-rr-calendar pt-1"></i
                       ><span class="hover:underline">View All Shifts</span></a
                     >
                   </li>
                   <li>
                     <a
+                      href="student-schedule.html"
                       class="hover:bg-transparent text-primary hover:underline pl-0"
                       ><i class="fi fi-rr-calendar-plus pt-1"></i
                       ><span class="hover:underline">Add A Shift</span></a
@@ -190,6 +221,7 @@
                   </li>
                   <li>
                     <a
+                      href="student-schedule.html"
                       class="hover:bg-transparent text-primary hover:underline pl-0"
                       ><i class="fi fi-rr-calendar-check pt-1"></i
                       ><span class="hover:underline">Confirm Shifts</span></a
@@ -213,6 +245,7 @@
       const ROLES_TABLE = "Roles";
 
       const userId = localStorage.getItem("cpoUserId");
+      console.log("Stored cpoUserId:", userId);
 
       const avatarEl = document.getElementById("userAvatar");
       const nameEl = document.getElementById("userName");
