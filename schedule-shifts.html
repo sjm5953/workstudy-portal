@@ -886,11 +886,15 @@
 
       shiftSearchInput.addEventListener("input", filterShifts);
 
-      document.getElementById("logoutBtn").addEventListener("click", () => {
-        localStorage.removeItem("cpoUserId");
-        localStorage.removeItem("cpoUserEmail");
-        localStorage.removeItem("cpoDisplayName");
-      });
+      const logoutBtn = document.getElementById("logoutBtn");
+
+      if (logoutBtn) {
+        logoutBtn.addEventListener("click", () => {
+          localStorage.removeItem("cpoUserId");
+          localStorage.removeItem("cpoUserEmail");
+          localStorage.removeItem("cpoDisplayName");
+        });
+      }
 
       loadShiftsTable();
       updateFilterUI();

@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="en" data-theme="green">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CPO Portal</title>
+
+    <!-- fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- tailwind -->
+    <link href="src/output.css" rel="stylesheet" />
+
+    <!-- icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdn-uicons.flaticon.com/4.0.0/uicons-regular-rounded/css/uicons-regular-rounded.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn-uicons.flaticon.com/4.0.0/uicons-bold-rounded/css/uicons-bold-rounded.css"
+    />
+  </head>
+
+  <body class="h-screen overflow-hidden font-[Google_Sans_Flex]">
+    <!-- main container -->
+    <div class="flex flex-col bg-neutral-100 h-full">
+      <!--topnav-->
+      <div class="h-16 bg-base-100 flex items-center shadow-md px-8">
+        <div class="flex items-center gap-1">
+          <i class="fi fi-br-e-learning pt-1 text-lg text-primary"></i>
+          <h1 class="font-black text-md uppercase">CPO Portal</h1>
+        </div>
+        <div class="flex-1 flex justify-center">
+          <ul class="menu menu-horizontal">
+            <li>
+              <a class="stuNavItem stuNavActive" href="public-portal.html"
+                >Calendar</a
+              >
+            </li>
+            <li>
+              <a class="stuNavItem" href="public-announcements.html"
+                >Announcements</a
+              >
+            </li>
+            <li><a class="stuNavItem" href="resources.html">Resources</a></li>
+          </ul>
+        </div>
+
+        <a class="btn btn-circle btn-sm bg-neutral-200 border-0 shadow-none">
+          <i class="fi fi-br-bell pt-1 opacity-60"></i>
+        </a>
+
+        <div class="divider divider-horizontal px-4 opacity-20"></div>
+
+        <!-- USER -->
+        <div class="dropdown dropdown-end">
+          <div
+            id="userContainer"
+            tabindex="0"
+            role="button"
+            class="flex items-center gap-4 cursor-pointer hover:bg-neutral-100 rounded-xl px-3 py-2 transition-colors"
+          >
+            <div class="avatar">
+              <div class="w-8 rounded-full">
+                <img id="userAvatar" src="" />
+              </div>
+            </div>
+
+            <div class="flex flex-col">
+              <h1 id="userName" class="text-xs uppercase font-bold">
+                Loading...
+              </h1>
+              <h2 id="userRole" class="text-xs opacity-60 uppercase">
+                Loading...
+              </h2>
+            </div>
+
+            <i class="fi fi-br-angle-small-down pt-1 opacity-60"></i>
+          </div>
+
+          <ul
+            tabindex="0"
+            class="dropdown-content menu bg-base-100 rounded-box z-[100] w-52 p-2 shadow-xl border border-neutral-200 mt-2 uppercase text-xs font-bold"
+          >
+            <li>
+              <a href="settings.html">
+                <i class="fi fi-br-settings"></i>
+                Settings
+              </a>
+            </li>
+
+            <li>
+              <a id="logoutBtn" href="auth.html">
+                <i class="fi fi-br-sign-out-alt"></i>
+                Logout
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <!--body-->
+      <div class="flex-1 flex flex-col items-center py-8">
+        <div class="w-full max-w-[1600px] px-8 md:px-0">
+          <div
+            class="bg-base-100 shadow-md rounded-lg px-8 py-4 bg-linear-to-bl from-[#f3f520] to-[#4DB900] text-base-100 flex items-center justify-between"
+          >
+            <h1 class="uppercase font-black text-2xl">Weekly Schedule</h1>
+
+            <div class="flex items-center gap-2">
+              <select
+                id="calendarViewSelect"
+                class="select select-sm select-bordered bg-base-100 text-neutral"
+              >
+                <option value="week">Week</option>
+                <option value="day">Day</option>
+              </select>
+
+              <button
+                id="prevWeekBtn"
+                class="btn btn-sm btn-circle bg-base-100 border-0"
+              >
+                ←
+              </button>
+
+              <button
+                id="todayWeekBtn"
+                class="btn btn-sm rounded-full bg-base-100 border-0"
+              >
+                Today
+              </button>
+
+              <button
+                id="nextWeekBtn"
+                class="btn btn-sm btn-circle bg-base-100 border-0"
+              >
+                →
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-base-100 rounded-lg shadow-md mt-4 overflow-hidden">
+            <div class="px-6 py-4 border-b border-neutral-200">
+              <h2 id="weekLabel" class="font-black uppercase text-lg">
+                Loading...
+              </h2>
+            </div>
+
+            <div class="overflow-auto max-h-[70vh]">
+              <div id="weekCalendar" class="min-w-[1400px]"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      const AIRTABLE_TOKEN =
+        "path5D1SLsZnikHyD.8e47f28d9b3b2913d1ebf07e9b1beb8c0903a82bb49266f19cb98fb4021b0129";
+      const BASE_ID = "appYqZMGk18beV4qI";
+
+      const SCHEDULE_TABLE = "Schedule";
+      const ACTIVE_WORKSTUDIES_TABLE = "Active Workstudies";
+
+      const weekCalendar = document.getElementById("weekCalendar");
+      const weekLabel = document.getElementById("weekLabel");
+      const prevWeekBtn = document.getElementById("prevWeekBtn");
+      const nextWeekBtn = document.getElementById("nextWeekBtn");
+      const todayWeekBtn = document.getElementById("todayWeekBtn");
+
+      const calendarViewSelect = document.getElementById("calendarViewSelect");
+      let calendarView = "week";
+
+      let viewedDate = new Date();
+      viewedDate.setHours(0, 0, 0, 0);
+
+      function getMonday(date) {
+        const d = new Date(date);
+        const day = d.getDay();
+        const diff = day === 0 ? -6 : 1 - day;
+        d.setDate(d.getDate() + diff);
+        d.setHours(0, 0, 0, 0);
+        return d;
+      }
+
+      function getWeekDays(date) {
+        const monday = getMonday(date);
+
+        return Array.from({ length: 6 }, (_, index) => {
+          const day = new Date(monday);
+          day.setDate(monday.getDate() + index);
+          return day;
+        });
+      }
+
+      function isSameDate(a, b) {
+        return (
+          a.getFullYear() === b.getFullYear() &&
+          a.getMonth() === b.getMonth() &&
+          a.getDate() === b.getDate()
+        );
+      }
+
+      function formatTime(dateString) {
+        const date = new Date(dateString);
+
+        return date.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+        });
+      }
+
+      function formatDay(date) {
+        return date.toLocaleDateString("en-US", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+        });
+      }
+
+      function getStatusClass(status) {
+        if (status === "Confirmed") return "bg-primary text-base-100";
+        if (status === "Call Out") return "bg-red-400 text-base-100";
+        return "bg-amber-400 text-neutral";
+      }
+
+      async function fetchScheduleRecords() {
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          SCHEDULE_TABLE,
+        )}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch schedule records.");
+        }
+
+        const data = await response.json();
+        return data.records;
+      }
+
+      async function fetchWorkstudyMap() {
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          ACTIVE_WORKSTUDIES_TABLE,
+        )}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch workstudies.");
+        }
+
+        const data = await response.json();
+
+        const map = {};
+        data.records.forEach((record) => {
+          map[record.id] = record.fields.Name || "Unnamed";
+        });
+
+        return map;
+      }
+
+      function getWorkstudyName(fields, workstudyMap) {
+        const linkedIds = fields.workstudy_name;
+
+        if (!Array.isArray(linkedIds) || linkedIds.length === 0) {
+          return "Unassigned";
+        }
+
+        return linkedIds.map((id) => workstudyMap[id] || "Unknown").join(", ");
+      }
+
+      function renderWeekCalendar(shifts, workstudyMap) {
+        const weekDays = getWeekDays(viewedDate);
+        const weekStart = weekDays[0];
+        const weekEnd = weekDays[5];
+
+        weekLabel.textContent = `${formatDay(weekStart)} - ${formatDay(weekEnd)}`;
+
+        const startHour = 7;
+        const endHour = 19;
+        const hourHeight = 72;
+        const timeColWidth = 90;
+        const dayColWidth = 220;
+        const totalHours = endHour - startHour;
+        const gridHeight = totalHours * hourHeight;
+
+        const hours = Array.from({ length: totalHours + 1 }, (_, index) => {
+          return startHour + index;
+        });
+
+        const dayColumns = weekDays
+          .map((day) => {
+            const dayShifts = shifts.filter((record) => {
+              return isSameDate(new Date(record.fields.shift_start), day);
+            });
+
+            const bars = dayShifts
+              .map((record) => {
+                const fields = record.fields;
+
+                const start = new Date(fields.shift_start);
+                const end = new Date(fields.shift_end);
+
+                const startMinutes =
+                  (start.getHours() - startHour) * 60 + start.getMinutes();
+                const durationMinutes = Math.max(30, (end - start) / 60000);
+
+                const top = (startMinutes / 60) * hourHeight;
+                const height = (durationMinutes / 60) * hourHeight;
+
+                const status = fields.shift_status || "Unconfirmed";
+                const statusClass = getStatusClass(status);
+
+                return `
+              <div
+                class="absolute left-2 right-2 rounded-lg ${statusClass} px-3 py-2 shadow-sm overflow-hidden"
+                style="top:${top}px; height:${height}px;"
+              >
+                <p class="text-[11px] font-black uppercase truncate">
+                  ${getWorkstudyName(fields, workstudyMap)}
+                </p>
+                <p class="text-[10px] font-bold uppercase opacity-80 truncate">
+                  ${formatTime(fields.shift_start)} - ${formatTime(fields.shift_end)}
+                </p>
+              </div>
+            `;
+              })
+              .join("");
+
+            return `
+          <div class="relative border-r border-neutral-100" style="height:${gridHeight}px;">
+            ${bars}
+          </div>
+        `;
+          })
+          .join("");
+
+        weekCalendar.innerHTML = `
+      <div
+        class="grid bg-base-100 sticky top-0 z-30 border-b border-neutral-200"
+        style="grid-template-columns:${timeColWidth}px repeat(6, ${dayColWidth}px);"
+      >
+        <div class="px-4 py-3 border-r border-neutral-200"></div>
+
+        ${weekDays
+          .map(
+            (day) => `
+              <div class="px-4 py-3 border-r border-neutral-100">
+                <p class="text-xs font-black uppercase">
+                  ${day.toLocaleDateString("en-US", { weekday: "short" })}
+                </p>
+                <p class="text-[10px] uppercase opacity-60">
+                  ${day.toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </p>
+              </div>
+            `,
+          )
+          .join("")}
+      </div>
+
+      <div
+        class="grid"
+        style="grid-template-columns:${timeColWidth}px repeat(6, ${dayColWidth}px);"
+      >
+        <div class="relative border-r border-neutral-200" style="height:${gridHeight}px;">
+          ${hours
+            .map((hour, index) => {
+              const top = index * hourHeight;
+
+              const labelDate = new Date();
+              labelDate.setHours(hour, 0, 0, 0);
+
+              return `
+                <div
+                  class="absolute left-0 right-0 px-4 text-[10px] font-black uppercase opacity-60"
+                  style="top:${top}px;"
+                >
+                  ${labelDate.toLocaleTimeString("en-US", {
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}
+                </div>
+              `;
+            })
+            .join("")}
+        </div>
+
+        <div
+          class="col-span-6 grid relative"
+          style="
+            grid-template-columns: repeat(6, ${dayColWidth}px);
+            height:${gridHeight}px;
+            background-image: linear-gradient(to bottom, rgba(0,0,0,.08) 1px, transparent 1px);
+            background-size: 100% ${hourHeight}px;
+          "
+        >
+          ${dayColumns}
+        </div>
+      </div>
+    `;
+      }
+
+      function renderDayCalendar(shifts, workstudyMap) {
+        weekLabel.textContent = formatDay(viewedDate);
+
+        const startHour = 7;
+        const endHour = 19;
+        const slotMinutes = 30;
+        const slotWidth = 64;
+        const labelColWidth = 220;
+        const rowHeight = 64;
+
+        const slots = [];
+
+        for (let hour = startHour; hour <= endHour; hour++) {
+          for (let minute of [0, 30]) {
+            if (hour === endHour && minute > 0) continue;
+
+            const labelDate = new Date();
+            labelDate.setHours(hour, minute, 0, 0);
+
+            slots.push({
+              hour,
+              minute,
+              label: labelDate.toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "2-digit",
+              }),
+            });
+          }
+        }
+
+        const gridWidth = slots.length * slotWidth;
+
+        if (shifts.length === 0) {
+          weekCalendar.innerHTML = `
+      <div class="p-8 text-xs uppercase font-bold opacity-60">
+        No shifts scheduled for this day.
+      </div>
+    `;
+          return;
+        }
+
+        const rows = shifts.map((record) => {
+          const fields = record.fields;
+
+          const name = getWorkstudyName(fields, workstudyMap);
+          const start = new Date(fields.shift_start);
+          const end = new Date(fields.shift_end);
+
+          const leftMinutes = Math.max(
+            0,
+            (start.getHours() - startHour) * 60 + start.getMinutes(),
+          );
+
+          const durationMinutes = Math.max(30, (end - start) / 60000);
+
+          const left = (leftMinutes / slotMinutes) * slotWidth;
+          const width = (durationMinutes / slotMinutes) * slotWidth;
+
+          const status = fields.shift_status || "Unconfirmed";
+          const statusClass = getStatusClass(status);
+
+          return `
+      <div
+        class="relative border-b border-neutral-100"
+        style="height:${rowHeight}px; display:grid; grid-template-columns:${labelColWidth}px ${gridWidth}px;"
+      >
+        <div class="sticky left-0 z-20 bg-base-100 px-6 flex items-center border-r border-neutral-200">
+          <h3 class="font-black uppercase text-sm truncate">${name}</h3>
+        </div>
+
+        <div
+          class="relative"
+          style="
+            background-image: linear-gradient(to right, rgba(0,0,0,.08) 1px, transparent 1px);
+            background-size: ${slotWidth}px 100%;
+          "
+        >
+          <div
+            class="absolute top-3 h-10 rounded-full ${statusClass} px-4 flex items-center shadow-sm"
+            style="left:${left}px; width:${width}px;"
+          >
+            <span class="text-xs font-black uppercase truncate">
+              ${formatTime(fields.shift_start)} - ${formatTime(fields.shift_end)}
+            </span>
+          </div>
+        </div>
+      </div>
+    `;
+        });
+
+        weekCalendar.innerHTML = `
+    <div
+      class="grid border-b border-neutral-200 bg-base-100 sticky top-0 z-30"
+      style="grid-template-columns:${labelColWidth}px ${gridWidth}px;"
+    >
+      <div class="sticky left-0 z-40 bg-base-100 px-6 py-3 border-r border-neutral-200">
+        <h3 class="font-black uppercase text-xs opacity-60">Workstudy</h3>
+      </div>
+
+      <div
+        class="grid"
+        style="grid-template-columns: repeat(${slots.length}, ${slotWidth}px);"
+      >
+        ${slots
+          .map(
+            (slot) => `
+              <div class="px-2 py-3 border-r border-neutral-100">
+                <p class="text-[10px] font-black uppercase opacity-60 whitespace-nowrap">
+                  ${slot.label}
+                </p>
+              </div>
+            `,
+          )
+          .join("")}
+      </div>
+    </div>
+
+    ${rows.join("")}
+  `;
+      }
+
+      async function loadScheduleView() {
+        weekCalendar.innerHTML = `
+    <div class="p-8 text-xs uppercase font-bold opacity-60">
+      Loading schedule...
+    </div>
+  `;
+
+        const [allRecords, workstudyMap] = await Promise.all([
+          fetchScheduleRecords(),
+          fetchWorkstudyMap(),
+        ]);
+
+        const filteredRecords = allRecords.filter((record) => {
+          const fields = record.fields;
+
+          if (!fields.shift_start || !fields.shift_end) return false;
+          if (fields.shift_status === "Requested") return false;
+
+          return true;
+        });
+
+        if (calendarView === "day") {
+          const shiftsForDay = filteredRecords
+            .filter((record) => {
+              return isSameDate(
+                new Date(record.fields.shift_start),
+                viewedDate,
+              );
+            })
+            .sort((a, b) => {
+              return (
+                new Date(a.fields.shift_start) - new Date(b.fields.shift_start)
+              );
+            });
+
+          renderDayCalendar(shiftsForDay, workstudyMap);
+          return;
+        }
+
+        const weekDays = getWeekDays(viewedDate);
+        const weekStart = weekDays[0];
+        const weekEnd = new Date(weekDays[5]);
+        weekEnd.setHours(23, 59, 59, 999);
+
+        const shiftsForWeek = filteredRecords
+          .filter((record) => {
+            const shiftStart = new Date(record.fields.shift_start);
+            return shiftStart >= weekStart && shiftStart <= weekEnd;
+          })
+          .sort((a, b) => {
+            return (
+              new Date(a.fields.shift_start) - new Date(b.fields.shift_start)
+            );
+          });
+
+        renderWeekCalendar(shiftsForWeek, workstudyMap);
+      }
+
+      prevWeekBtn.addEventListener("click", () => {
+        viewedDate.setDate(
+          viewedDate.getDate() - (calendarView === "week" ? 7 : 1),
+        );
+        loadScheduleView();
+      });
+
+      nextWeekBtn.addEventListener("click", () => {
+        viewedDate.setDate(
+          viewedDate.getDate() + (calendarView === "week" ? 7 : 1),
+        );
+        loadScheduleView();
+      });
+
+      todayWeekBtn.addEventListener("click", () => {
+        viewedDate = new Date();
+        viewedDate.setHours(0, 0, 0, 0);
+        loadScheduleView();
+      });
+
+      calendarViewSelect.addEventListener("change", () => {
+        calendarView = calendarViewSelect.value;
+        loadScheduleView();
+      });
+
+      loadScheduleView().catch((error) => {
+        console.error(error);
+        weekCalendar.innerHTML = `
+      <div class="p-8 text-xs uppercase font-bold text-error">
+        Something went wrong loading the schedule.
+      </div>
+    `;
+      });
+    </script>
+  </body>
+</html>
