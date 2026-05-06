@@ -427,7 +427,7 @@
 
       async function fetchUser() {
         if (!userId) {
-          window.location.href = "auth.html"; // redirect if not logged in
+          window.location.href = "auth.html";
           return;
         }
 
@@ -446,8 +446,18 @@
         }
 
         const data = await response.json();
-        return data.fields;
+
+        const userFields = data.fields;
+
+        // redirect students
+        if (userFields.role === "Student") {
+          window.location.href = "student-portal.html";
+          return;
+        }
+
+        return userFields;
       }
+
       async function loadUserHeader() {
         const avatarEl = document.getElementById("userAvatar");
         const nameEl = document.getElementById("userName");
