@@ -178,6 +178,86 @@
         Evening
       </button>
     </div>
+    <div
+      id="editShiftOverlay"
+      class="hidden fixed inset-0 bg-black/30 z-40"
+    ></div>
+
+    <div
+      id="editShiftDrawer"
+      class="fixed top-0 right-0 h-screen w-full max-w-md bg-base-100 z-50 shadow-xl translate-x-full transition-transform duration-300 flex flex-col"
+    >
+      <div
+        class="h-16 px-6 border-b border-neutral-200 flex items-center justify-between"
+      >
+        <h1 class="font-black uppercase text-lg">Edit Shift</h1>
+        <button
+          id="closeEditShiftBtn"
+          class="btn btn-sm btn-circle border-0 shadow-none"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div class="p-6 flex flex-col gap-4 overflow-y-auto">
+        <input type="hidden" id="editShiftRecordId" />
+
+        <div>
+          <label class="label font-bold uppercase text-xs">Workstudy</label>
+          <select
+            id="editShiftWorkstudy"
+            class="select select-bordered w-full"
+          ></select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="label font-bold uppercase text-xs">Start</label>
+            <input
+              id="editShiftStart"
+              type="datetime-local"
+              class="input w-full"
+            />
+          </div>
+
+          <div>
+            <label class="label font-bold uppercase text-xs">End</label>
+            <input
+              id="editShiftEnd"
+              type="datetime-local"
+              class="input w-full"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label class="label font-bold uppercase text-xs">Status</label>
+          <select id="editShiftStatus" class="select select-bordered w-full">
+            <option value="Unconfirmed">Unconfirmed</option>
+            <option value="Confirmed">Confirmed</option>
+            <option value="Requested">Requested</option>
+            <option value="Call Out">Call Out</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="label font-bold uppercase text-xs">Notes</label>
+          <textarea
+            id="editShiftNotes"
+            class="textarea textarea-bordered w-full"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="p-6 border-t border-neutral-200">
+        <button
+          id="saveEditShiftBtn"
+          class="btn w-full bg-neutral text-base-100 border-0 shadow-none uppercase font-bold"
+        >
+          Save Changes
+        </button>
+      </div>
+    </div>
     <script src="src/components.js"></script>
 
     <script>
@@ -224,6 +304,139 @@
 
       const calendarViewSelect = document.getElementById("calendarViewSelect");
       let calendarView = "day";
+
+      const editShiftOverlay = document.getElementById("editShiftOverlay");
+      const editShiftDrawer = document.getElementById("editShiftDrawer");
+      const closeEditShiftBtn = document.getElementById("closeEditShiftBtn");
+      const saveEditShiftBtn = document.getElementById("saveEditShiftBtn");
+
+      const editShiftRecordId = document.getElementById("editShiftRecordId");
+      const editShiftWorkstudy = document.getElementById("editShiftWorkstudy");
+      const editShiftStart = document.getElementById("editShiftStart");
+      const editShiftEnd = document.getElementById("editShiftEnd");
+      const editShiftStatus = document.getElementById("editShiftStatus");
+      const editShiftNotes = document.getElementById("editShiftNotes");
+
+      let allScheduleRecords = [];
+      let activeWorkstudyMapGlobal = {};
+
+      function populateEditWorkstudySelect(selectedId) {
+        const sortedWorkstudies = [...activeWorkstudyRecords].sort((a, b) => {
+          return (a.fields.Name || "").localeCompare(b.fields.Name || "");
+        });
+
+        editShiftWorkstudy.innerHTML = sortedWorkstudies
+          .map((record) => {
+            const selected = record.id === selectedId ? "selected" : "";
+
+            return `
+        <option value="${record.id}" ${selected}>
+          ${record.fields.Name || "Unnamed"}
+        </option>
+      `;
+          })
+          .join("");
+      }
+
+      function openEditShiftDrawer(record) {
+        const fields = record.fields;
+        const selectedWorkstudyId = Array.isArray(fields.workstudy_name)
+          ? fields.workstudy_name[0]
+          : "";
+
+        populateEditWorkstudySelect(selectedWorkstudyId);
+
+        editShiftRecordId.value = record.id;
+        editShiftWorkstudy.value = selectedWorkstudyId || "";
+        editShiftStart.value = dateToLocalInputValue(
+          new Date(fields.shift_start),
+        );
+        editShiftEnd.value = dateToLocalInputValue(new Date(fields.shift_end));
+        editShiftStatus.value = fields.shift_status || "Unconfirmed";
+        editShiftNotes.value = fields.notes || "";
+
+        editShiftOverlay.classList.remove("hidden");
+        editShiftDrawer.classList.remove("translate-x-full");
+      }
+
+      function closeEditShiftDrawer() {
+        editShiftOverlay.classList.add("hidden");
+        editShiftDrawer.classList.add("translate-x-full");
+      }
+
+      async function updateShiftRecord() {
+        const recordId = editShiftRecordId.value;
+
+        const startDate = new Date(editShiftStart.value);
+        const endDate = new Date(editShiftEnd.value);
+
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          SCHEDULE_TABLE,
+        )}/${recordId}`;
+
+        const response = await fetch(url, {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            fields: {
+              workstudy_name: [editShiftWorkstudy.value],
+              shift_start: startDate.toISOString(),
+              shift_end: endDate.toISOString(),
+              shift_status: editShiftStatus.value,
+              notes: editShiftNotes.value.trim(),
+            },
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(errorText);
+          throw new Error("Failed to update shift.");
+        }
+
+        return response.json();
+      }
+
+      document.addEventListener("click", (event) => {
+        const shiftBar = event.target.closest(".shift-bar");
+        if (!shiftBar) return;
+
+        const record = allScheduleRecords.find(
+          (item) => item.id === shiftBar.dataset.recordId,
+        );
+
+        if (record) {
+          openEditShiftDrawer(record);
+        }
+      });
+
+      closeEditShiftBtn.addEventListener("click", closeEditShiftDrawer);
+      editShiftOverlay.addEventListener("click", closeEditShiftDrawer);
+
+      saveEditShiftBtn.addEventListener("click", async () => {
+        saveEditShiftBtn.disabled = true;
+        saveEditShiftBtn.textContent = "Saving...";
+
+        try {
+          await updateShiftRecord();
+
+          saveEditShiftBtn.disabled = false;
+          saveEditShiftBtn.textContent = "Save Changes";
+
+          closeEditShiftDrawer();
+          await loadScheduleView();
+        } catch (error) {
+          console.error(error);
+
+          saveEditShiftBtn.disabled = false;
+          saveEditShiftBtn.textContent = "Save Changes";
+
+          alert("Something went wrong saving the shift.");
+        }
+      });
 
       function getMonday(date) {
         const d = new Date(date);
@@ -306,15 +519,16 @@
                     : "bg-amber-400 text-neutral";
 
                 return `
-  <div
-    class="absolute rounded-lg ${barColorClass} px-3 py-2 shadow-sm overflow-hidden"
-    style="
-  top:${top}px;
-  height:${height}px;
-  left: calc(${(columnIndex / columnCount) * 100}% + 4px);
-  width: calc(${100 / columnCount}% - 8px);
-"
-            >
+<div
+  class="shift-bar absolute rounded-lg ${barColorClass} px-3 py-2 shadow-sm overflow-hidden cursor-pointer"
+  data-record-id="${record.id}"
+  style="
+    top:${top}px;
+    height:${height}px;
+    left: calc(${(columnIndex / columnCount) * 100}% + 4px);
+    width: calc(${100 / columnCount}% - 8px);
+  "
+>
               <p class="text-[11px] font-black uppercase truncate">
                 ${getWorkstudyName(fields, workstudyMap)}
               </p>
@@ -944,10 +1158,19 @@
 
           const status = fields.shift_status || "Unconfirmed";
 
-          const barColorClass =
-            status === "Confirmed"
-              ? "bg-primary text-base-100"
-              : "bg-amber-400 text-neutral";
+          let barColorClass = "bg-amber-400 text-neutral";
+
+          if (status === "Confirmed") {
+            barColorClass = "bg-primary text-base-100";
+          }
+
+          if (status === "Call Out") {
+            barColorClass = "bg-red-400 text-base-100";
+          }
+
+          if (status === "Requested") {
+            barColorClass = "bg-sky-400 text-base-100";
+          }
 
           return `
   <div
@@ -961,10 +1184,11 @@
         background-size: ${slotWidth}px 100%;
       "
     >
-      <div
-        class="absolute top-3 h-10 rounded-full ${barColorClass} px-4 flex items-center shadow-sm"
-style="left:${left}px; width:${width}px;"
-      >
+<div
+  class="shift-bar absolute top-3 h-10 rounded-full ${barColorClass} px-4 flex items-center shadow-sm cursor-pointer"
+  data-record-id="${record.id}"
+  style="left:${left}px; width:${width}px;"
+>
         <span class="text-xs font-black uppercase truncate">
           ${name} · ${formatShiftTime(fields.shift_start)} - ${formatShiftTime(fields.shift_end)}
         </span>
@@ -1080,6 +1304,9 @@ ${draftRow}
           fetchScheduleRecords(),
           fetchActiveWorkstudiesMap(),
         ]);
+
+        allScheduleRecords = allRecords;
+        activeWorkstudyMapGlobal = workstudyMap;
 
         if (calendarView === "day") {
           const dayString = formatDateForAirtable(viewedDate);
