@@ -365,11 +365,12 @@
             const fields = record.fields;
 
             return `
-        <button
-          type="button"
-          data-id="${record.id}"
-          class="todo-item text-left px-8 py-4 flex flex-col gap-1 hover:bg-neutral-100"
-        >
+  <button
+    type="button"
+    data-id="${record.id}"
+    data-link="${fields.confirmation_link || "#"}"
+    class="todo-item text-left px-8 py-4 flex flex-col gap-1 hover:bg-neutral-100"
+  >
           <h1 class="uppercase font-bold text-sm text-primary">
             ${fields.title || "Untitled To Do"}
           </h1>
@@ -384,17 +385,24 @@
         document.querySelectorAll(".todo-item").forEach((item) => {
           item.addEventListener("click", async () => {
             const recordId = item.dataset.id;
+            const redirectLink = item.dataset.link;
 
             try {
               await completeToDo(recordId);
+
+              if (redirectLink && redirectLink !== "#") {
+                window.location.href = redirectLink;
+                return;
+              }
+
               item.remove();
 
               if (todoList.querySelectorAll(".todo-item").length === 0) {
                 todoList.innerHTML = `
-            <div class="px-8 py-4 text-xs uppercase opacity-60">
-              No incomplete to-dos found.
-            </div>
-          `;
+          <div class="px-8 py-4 text-xs uppercase opacity-60">
+            No incomplete to-dos found.
+          </div>
+        `;
               }
             } catch (error) {
               console.error(error);
