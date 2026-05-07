@@ -317,16 +317,44 @@
 
         return data.records.filter((record) => {
           const linkedUsers = record.fields.user;
+          const isCompleted = record.fields.completed === true;
 
-          return Array.isArray(linkedUsers) && linkedUsers.includes(userId);
+          return (
+            Array.isArray(linkedUsers) &&
+            linkedUsers.includes(userId) &&
+            !isCompleted
+          );
         });
+      }
+
+      async function completeToDo(recordId) {
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          TODO_TABLE,
+        )}/${recordId}`;
+
+        const response = await fetch(url, {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            fields: {
+              completed: true,
+            },
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to complete to-do");
+        }
       }
 
       function renderToDos(records) {
         if (records.length === 0) {
           todoList.innerHTML = `
       <div class="px-8 py-4 text-xs uppercase opacity-60">
-        No to-dos found.
+        No incomplete to-dos found.
       </div>
     `;
           return;
@@ -335,12 +363,12 @@
         todoList.innerHTML = records
           .map((record) => {
             const fields = record.fields;
-            const link = fields.confirmation_link || "#";
 
             return `
-        <a
-          href="${link}"
-          class="px-8 py-4 flex flex-col gap-1 hover:bg-neutral-100"
+        <button
+          type="button"
+          data-id="${record.id}"
+          class="todo-item text-left px-8 py-4 flex flex-col gap-1 hover:bg-neutral-100"
         >
           <h1 class="uppercase font-bold text-sm text-primary">
             ${fields.title || "Untitled To Do"}
@@ -348,10 +376,32 @@
           <p class="text-sm opacity-60">
             ${fields.description || ""}
           </p>
-        </a>
+        </button>
       `;
           })
           .join("");
+
+        document.querySelectorAll(".todo-item").forEach((item) => {
+          item.addEventListener("click", async () => {
+            const recordId = item.dataset.id;
+
+            try {
+              await completeToDo(recordId);
+              item.remove();
+
+              if (todoList.querySelectorAll(".todo-item").length === 0) {
+                todoList.innerHTML = `
+            <div class="px-8 py-4 text-xs uppercase opacity-60">
+              No incomplete to-dos found.
+            </div>
+          `;
+              }
+            } catch (error) {
+              console.error(error);
+              alert("Something went wrong completing this to-do.");
+            }
+          });
+        });
       }
 
       async function loadToDos() {
