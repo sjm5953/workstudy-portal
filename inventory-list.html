@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="en" data-theme="green">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <!--font-->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap"
+      rel="stylesheet"
+    />
+    <!--tailwind-->
+    <link href="src/output.css" rel="stylesheet" />
+    <!--icons-->
+    <link
+      rel="stylesheet"
+      href="https://cdn-uicons.flaticon.com/4.0.0/uicons-regular-rounded/css/uicons-regular-rounded.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn-uicons.flaticon.com/4.0.0/uicons-bold-rounded/css/uicons-bold-rounded.css"
+    />
+    <!--chart-->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body class="h-screen overflow-hidden">
+    <!--main container-->
+    <div class="h-screen bg-neutral-100 flex overflow-hidden">
+      <!--sidebar-->
+      <div id="sidebar"></div>
+      <!--right-->
+      <div class="flex-1 flex flex-col overflow-hidden">
+        <!--header-->
+        <div id="header"></div>
+        <!--content-->
+        <div class="p-8 flex flex-col flex-1 overflow-hidden min-h-0">
+          <div
+            class="bg-base-100 shadow-md rounded-lg px-8 py-4 bg-linear-to-bl from-[#f3f520] to-[#4DB900] text-base-100 flex items-center justify-between"
+          >
+            <h1 class="uppercase font-black text-2xl">Supplies List</h1>
+          </div>
+          <div class="mt-4">
+            <label class="input w-full rounded-lg bg-base-100 shadow-md h-12">
+              <i class="fi fi-br-search opacity-50 pt-1"></i>
+              <input
+                id="inventorySearchInput"
+                type="search"
+                class="grow"
+                placeholder="Search inventory..."
+              />
+            </label>
+          </div>
+          <div class="mt-4 flex-1 min-h-0">
+            <div
+              class="bg-base-100 rounded-lg shadow-md overflow-hidden h-full flex flex-col"
+            >
+              <div class="overflow-y-auto flex-1 min-h-0">
+                <table class="table">
+                  <thead class="sticky top-0 bg-base-100 z-10">
+                    <tr class="uppercase text-xs">
+                      <th>Item</th>
+                      <th>Category</th>
+                      <th>Quantity</th>
+                    </tr>
+                  </thead>
+                  <tbody id="inventoryTableBody">
+                    <tr>
+                      <td colspan="3" class="uppercase text-xs opacity-60">
+                        Loading inventory...
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      id="inventoryDrawerOverlay"
+      class="hidden fixed inset-0 z-[9998] bg-black/40"
+    ></div>
+
+    <div
+      id="inventoryDrawer"
+      class="fixed top-0 right-0 z-[9999] h-screen w-full max-w-md bg-base-100 shadow-xl translate-x-full transition-transform duration-300 flex flex-col"
+    >
+      <div
+        class="p-6 border-b border-neutral-200 flex items-start justify-between"
+      >
+        <div>
+          <p class="text-xs uppercase opacity-60 font-bold">Inventory Item</p>
+          <h2 id="drawerItemName" class="text-2xl font-black uppercase"></h2>
+        </div>
+
+        <button id="closeInventoryDrawer" class="btn btn-sm btn-circle">
+          ✕
+        </button>
+      </div>
+
+      <div
+        id="drawerContent"
+        class="p-6 overflow-y-auto flex-1 space-y-6"
+      ></div>
+    </div>
+    <script src="src/components.js"></script>
+    <script>
+      const AIRTABLE_TOKEN =
+        "path5D1SLsZnikHyD.8e47f28d9b3b2913d1ebf07e9b1beb8c0903a82bb49266f19cb98fb4021b0129";
+
+      const BASE_ID = "appYqZMGk18beV4qI";
+      const USERS_TABLE = "Users";
+
+      const INVENTORY_BASE_ID = "apptUAgpH6UuhPwYy";
+      const INVENTORY_TABLE = "Inventory";
+
+      const userId = localStorage.getItem("cpoUserId");
+      const inventoryTableBody = document.getElementById("inventoryTableBody");
+
+      const inventorySearchInput = document.getElementById(
+        "inventorySearchInput",
+      );
+
+      let allInventoryRecords = [];
+
+      const inventoryDrawerOverlay = document.getElementById(
+        "inventoryDrawerOverlay",
+      );
+      const inventoryDrawer = document.getElementById("inventoryDrawer");
+      const closeInventoryDrawer = document.getElementById(
+        "closeInventoryDrawer",
+      );
+      const drawerItemName = document.getElementById("drawerItemName");
+      const drawerContent = document.getElementById("drawerContent");
+
+      const SESSION_LINE_ITEMS_TABLE = "session_line_items";
+      let inventoryChart = null;
+
+      function setActiveNav() {
+        const currentPage = window.location.pathname.split("/").pop();
+        const links = document.querySelectorAll("[data-page]");
+
+        links.forEach((link) => {
+          if (link.dataset.page === currentPage) {
+            link.classList.add("navActive");
+
+            const details = link.closest("details");
+            if (details) details.open = true;
+          }
+        });
+      }
+
+      function getStockStatusClass(status) {
+        if (status === "LOW") return "bg-red-400 text-base-100";
+        if (status === "OVER") return "bg-sky-400 text-base-100";
+        if (status === "GOOD") return "bg-lime-400 text-base-100";
+        return "bg-neutral-300 text-neutral";
+      }
+
+      function renderInventory(records) {
+        if (!records || records.length === 0) {
+          inventoryTableBody.innerHTML = `
+        <tr>
+          <td colspan="3" class="uppercase text-xs opacity-60">
+            No inventory items found.
+          </td>
+        </tr>
+      `;
+          return;
+        }
+
+        inventoryTableBody.innerHTML = records
+          .map((record) => {
+            const fields = record.fields;
+            const statusClass = getStockStatusClass(fields.stock_status);
+
+            return `
+  <tr class="uppercase text-sm cursor-pointer hover:bg-neutral-100"
+      onclick="openInventoryDrawer('${record.id}')">
+    <td class="font-bold">${fields.item_name || "Unnamed Item"}</td>
+    <td>${fields.category || ""}</td>
+    <td>
+      <span class="rounded-full px-4 py-1 text-xs font-bold ${statusClass}">
+        ${fields.total_q ?? 0}
+      </span>
+    </td>
+  </tr>
+`;
+          })
+          .join("");
+      }
+
+      async function loadInventory() {
+        try {
+          inventoryTableBody.innerHTML = `
+      <tr>
+        <td colspan="3" class="uppercase text-xs opacity-60">
+          Loading inventory...
+        </td>
+      </tr>
+    `;
+
+          const url = `https://api.airtable.com/v0/${INVENTORY_BASE_ID}/${encodeURIComponent(
+            INVENTORY_TABLE,
+          )}?sort%5B0%5D%5Bfield%5D=item_name&sort%5B0%5D%5Bdirection%5D=asc`;
+
+          const response = await fetch(url, {
+            headers: {
+              Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch inventory");
+          }
+
+          const data = await response.json();
+
+          allInventoryRecords = data.records;
+
+          renderInventory(allInventoryRecords);
+        } catch (error) {
+          console.error(error);
+
+          inventoryTableBody.innerHTML = `
+      <tr>
+        <td colspan="3" class="uppercase text-xs text-error font-bold">
+          Something went wrong loading inventory.
+        </td>
+      </tr>
+    `;
+        }
+      }
+
+      function filterInventory() {
+        const searchTerm = inventorySearchInput.value.trim().toLowerCase();
+
+        if (!searchTerm) {
+          renderInventory(allInventoryRecords);
+          return;
+        }
+
+        const filtered = allInventoryRecords.filter((record) => {
+          const itemName = String(record.fields.item_name || "").toLowerCase();
+
+          return itemName.includes(searchTerm);
+        });
+
+        renderInventory(filtered);
+      }
+
+      function detailRow(label, value) {
+        return `
+    <div class="flex items-center justify-between gap-4 py-2 border-b border-neutral-100">
+      <span class="text-xs uppercase font-bold opacity-60">${label}</span>
+      <span class="text-sm font-bold text-right">${value || "—"}</span>
+    </div>
+  `;
+      }
+
+      function drawerSection(title, rows) {
+        return `
+    <section>
+      <h3 class="text-sm uppercase font-black mb-3">${title}</h3>
+      <div class="bg-neutral-100 rounded-lg p-4">
+        ${rows}
+      </div>
+    </section>
+  `;
+      }
+
+      async function openInventoryDrawer(recordId) {
+        const record = allInventoryRecords.find((item) => item.id === recordId);
+        if (!record) return;
+
+        const fields = record.fields;
+
+        drawerItemName.textContent = fields.item_name || "Unnamed Item";
+
+        const unitQty = Number(fields.min_order_unit_q) || 0;
+
+        let unitLabel = fields.unit || "";
+
+        if (unitQty !== 1 && unitLabel) {
+          if (unitLabel.toLowerCase().endsWith("y")) {
+            unitLabel = unitLabel.slice(0, -1) + "ies";
+          } else {
+            unitLabel += "s";
+          }
+        }
+
+        const priceText = `$${fields.price_per_case ?? "—"} / ${fields.min_order_unit_q ?? "—"} ${unitLabel}`;
+
+        drawerContent.innerHTML = `
+    ${drawerSection(
+      "Details",
+      detailRow("Category", fields.category) +
+        detailRow("Manager", fields.manager) +
+        detailRow("Supplier", fields.supplier),
+    )}
+
+    ${drawerSection(
+      "Stock",
+      detailRow("Stock Status", fields.stock_status) +
+        detailRow("Total Quantity", fields.total_q) +
+        detailRow("Minimum Quantity", fields.min_q) +
+        detailRow("Times Ordered", fields.times_ordered),
+    )}
+
+    ${drawerSection(
+      "History",
+      `<canvas id="inventoryHistoryChart" class="w-full"></canvas>`,
+    )}
+
+    ${drawerSection("Ordering", detailRow("Price", priceText))}
+  `;
+
+        inventoryDrawerOverlay.classList.remove("hidden");
+        inventoryDrawer.classList.remove("translate-x-full");
+
+        try {
+          const historyRecords = await fetchItemHistory(fields.item_id);
+          renderInventoryChart(historyRecords);
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
+      function closeDrawer() {
+        inventoryDrawerOverlay.classList.add("hidden");
+        inventoryDrawer.classList.add("translate-x-full");
+      }
+
+      closeInventoryDrawer.addEventListener("click", closeDrawer);
+      inventoryDrawerOverlay.addEventListener("click", closeDrawer);
+
+      async function fetchItemHistory(itemRecordId) {
+        const formula = encodeURIComponent(`{item_name} = "${itemRecordId}"`);
+
+        const url = `https://api.airtable.com/v0/${INVENTORY_BASE_ID}/${encodeURIComponent(
+          SESSION_LINE_ITEMS_TABLE,
+        )}?filterByFormula=${formula}&sort%5B0%5D%5Bfield%5D=session_date&sort%5B0%5D%5Bdirection%5D=asc`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch item history");
+        }
+
+        const data = await response.json();
+        return data.records;
+      }
+
+      function renderInventoryChart(records) {
+        const canvas = document.getElementById("inventoryHistoryChart");
+        if (!canvas) return;
+
+        const groupedByDate = {};
+
+        records.forEach((record) => {
+          const date = new Date(record.fields.session_date);
+
+          const dateKey = date.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          });
+
+          groupedByDate[dateKey] = Number(record.fields.total_q || 0);
+        });
+
+        const labels = Object.keys(groupedByDate);
+        const values = Object.values(groupedByDate);
+
+        if (inventoryChart) {
+          inventoryChart.destroy();
+        }
+
+        inventoryChart = new Chart(canvas, {
+          type: "line",
+          data: {
+            labels,
+            datasets: [
+              {
+                label: "Total Quantity",
+                data: values,
+                tension: 0.35,
+                fill: false,
+                borderColor: "#84cc16",
+                backgroundColor: "#84cc16",
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: {
+                display: false,
+              },
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+              },
+            },
+          },
+        });
+      }
+
+      async function fetchUser() {
+        if (!userId) {
+          window.location.href = "auth.html";
+          return;
+        }
+
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          USERS_TABLE,
+        )}/${userId}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch user");
+        }
+
+        const data = await response.json();
+        const userFields = data.fields;
+
+        if (userFields.role === "Student") {
+          window.location.href = "student-portal.html";
+          return;
+        }
+
+        return userFields;
+      }
+
+      async function loadUserHeader() {
+        const avatarEl = document.getElementById("userAvatar");
+        const nameEl = document.getElementById("userName");
+        const roleEl = document.getElementById("userRole");
+        const displayNameSpan = document.getElementById("display_name");
+
+        try {
+          const user = await fetchUser();
+
+          avatarEl.src =
+            user.avatar_url ||
+            "https://img.daisyui.com/images/profile/demo/yellingcat@192.webp";
+
+          nameEl.textContent = user.display_name || "User";
+
+          if (displayNameSpan) {
+            displayNameSpan.textContent = user.display_name || "User";
+          }
+
+          if (user.role && user.role.length > 0) {
+            roleEl.textContent = "Loading...";
+            await loadRoleName(user.role[0]);
+          } else {
+            roleEl.textContent = "Standard";
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      async function loadRoleName(roleRecordId) {
+        const roleEl = document.getElementById("userRole");
+
+        const url = `https://api.airtable.com/v0/${BASE_ID}/Roles/${roleRecordId}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          roleEl.textContent = "Role";
+          return;
+        }
+
+        const data = await response.json();
+        roleEl.textContent = data.fields.name || "Role";
+      }
+
+      loadComponent("sidebar", "components/sidebar.html", () => {
+        setActiveNav();
+      });
+
+      loadComponent("header", "components/header.html", () => {
+        loadUserHeader();
+      });
+
+      const logoutBtn = document.getElementById("logoutBtn");
+
+      if (logoutBtn) {
+        logoutBtn.addEventListener("click", () => {
+          localStorage.removeItem("cpoUserId");
+          localStorage.removeItem("cpoUserEmail");
+          localStorage.removeItem("cpoDisplayName");
+        });
+      }
+
+      loadInventory();
+      inventorySearchInput.addEventListener("input", filterInventory);
+    </script>
+  </body>
+</html>

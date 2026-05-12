@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en" data-theme="green">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <!--font-->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap"
+      rel="stylesheet"
+    />
+    <!--tailwind-->
+    <link href="src/output.css" rel="stylesheet" />
+    <!--icons-->
+    <link
+      rel="stylesheet"
+      href="https://cdn-uicons.flaticon.com/4.0.0/uicons-regular-rounded/css/uicons-regular-rounded.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn-uicons.flaticon.com/4.0.0/uicons-bold-rounded/css/uicons-bold-rounded.css"
+    />
+  </head>
+  <body class="h-screen overflow-hidden">
+    <!--main container-->
+    <div class="h-screen bg-neutral-100 flex overflow-hidden">
+      <!--sidebar-->
+      <div id="sidebar"></div>
+      <!--right-->
+      <div class="flex-1 flex flex-col overflow-hidden">
+        <!--header-->
+        <div id="header"></div>
+        <!--content-->
+        <div class="p-8 flex-1 overflow-y-auto min-h-0">
+          <div
+            class="bg-base-100 shadow-md rounded-lg px-8 py-4 bg-linear-to-bl from-[#f3f520] to-[#4DB900] text-base-100 from-10% flex flex-col gap-2"
+          >
+            <h1 class="uppercase font-bold text-2xl">Resources</h1>
+          </div>
+          <div id="resourcesList" class="mt-6 flex flex-col gap-3"></div>
+        </div>
+      </div>
+    </div>
+    <script src="src/components.js"></script>
+    <script>
+      const AIRTABLE_TOKEN =
+        "path5D1SLsZnikHyD.8e47f28d9b3b2913d1ebf07e9b1beb8c0903a82bb49266f19cb98fb4021b0129";
+      const BASE_ID = "appYqZMGk18beV4qI";
+      const USERS_TABLE = "Users";
+
+      const userId = localStorage.getItem("cpoUserId");
+
+      const CPO_RESOURCES_TOKEN =
+        "patFdMD2BOJtJaB4y.26df80a95de62301e33a03bda6ac99c33b3c77b88f4f8ea3ffc51d6e30764c54";
+
+      const CPO_RESOURCES_BASE_ID = "app2WepjTwau6TuDe";
+      const RESOURCES_TABLE = "Resources";
+
+      function setActiveNav() {
+        const currentPage = window.location.pathname.split("/").pop();
+
+        const links = document.querySelectorAll("[data-page]");
+
+        links.forEach((link) => {
+          if (link.dataset.page === currentPage) {
+            link.classList.add("navActive");
+
+            // 👇 If inside a <details>, open it
+            const details = link.closest("details");
+            if (details) {
+              details.open = true;
+            }
+          }
+        });
+      }
+
+      async function fetchUser() {
+        if (!userId) {
+          window.location.href = "auth.html";
+          return;
+        }
+
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          USERS_TABLE,
+        )}/${userId}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch user");
+        }
+
+        const data = await response.json();
+
+        const userFields = data.fields;
+
+        // redirect students
+        if (userFields.role === "Student") {
+          window.location.href = "student-portal.html";
+          return;
+        }
+
+        return userFields;
+      }
+
+      async function loadUserHeader() {
+        const avatarEl = document.getElementById("userAvatar");
+        const nameEl = document.getElementById("userName");
+        const roleEl = document.getElementById("userRole");
+        const displayNameSpan = document.getElementById("display_name");
+
+        try {
+          const user = await fetchUser();
+
+          avatarEl.src =
+            user.avatar_url ||
+            "https://img.daisyui.com/images/profile/demo/yellingcat@192.webp";
+
+          nameEl.textContent = user.display_name || "User";
+
+          if (displayNameSpan) {
+            displayNameSpan.textContent = user.display_name || "User";
+          }
+
+          if (user.role && user.role.length > 0) {
+            roleEl.textContent = "Loading...";
+            await loadRoleName(user.role[0]);
+          } else {
+            roleEl.textContent = "Standard";
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      async function loadRoleName(roleRecordId) {
+        const roleEl = document.getElementById("userRole");
+
+        const url = `https://api.airtable.com/v0/${BASE_ID}/Roles/${roleRecordId}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          roleEl.textContent = "Role";
+          return;
+        }
+
+        const data = await response.json();
+        roleEl.textContent = data.fields.name || "Role";
+      }
+
+      loadComponent("sidebar", "components/sidebar.html", () => {
+        setActiveNav();
+      });
+
+      loadComponent("header", "components/header.html", () => {
+        loadUserHeader();
+      });
+
+      const logoutBtn = document.getElementById("logoutBtn");
+
+      if (logoutBtn) {
+        logoutBtn.addEventListener("click", () => {
+          localStorage.removeItem("cpoUserId");
+          localStorage.removeItem("cpoUserEmail");
+          localStorage.removeItem("cpoDisplayName");
+        });
+      }
+
+      async function fetchResources() {
+        const url = `https://api.airtable.com/v0/${CPO_RESOURCES_BASE_ID}/${encodeURIComponent(
+          RESOURCES_TABLE,
+        )}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${CPO_RESOURCES_TOKEN}`,
+          },
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          console.error("Airtable resources error:", data);
+          throw new Error(data.error?.message || "Failed to fetch resources");
+        }
+
+        return data.records;
+      }
+
+      function renderResources(resources) {
+        const list = document.getElementById("resourcesList");
+
+        if (!resources.length) {
+          list.innerHTML = `
+        <div class="bg-base-100 rounded-lg shadow p-6 text-neutral-500">
+          No resources found.
+        </div>
+      `;
+          return;
+        }
+
+        list.innerHTML = resources
+          .map((record) => {
+            const title = record.fields.title || "Untitled Resource";
+            const description = record.fields.description || "";
+
+            return `
+          <a 
+            href="resource-view.html?id=${record.id}"
+            class="bg-base-100 rounded-lg shadow p-5 hover:shadow-lg hover:-translate-y-0.5 transition block"
+          >
+            <h2 class="font-bold text-lg text-neutral-900">${title}</h2>
+            <p class="text-sm text-neutral-500 mt-1">${description}</p>
+          </a>
+        `;
+          })
+          .join("");
+      }
+
+      async function loadResources() {
+        try {
+          const resources = await fetchResources();
+          renderResources(resources);
+        } catch (err) {
+          console.error(err);
+
+          document.getElementById("resourcesList").innerHTML = `
+        <div class="bg-base-100 rounded-lg shadow p-6 text-error">
+          Could not load resources.
+        </div>
+      `;
+        }
+      }
+
+      loadResources();
+    </script>
+  </body>
+</html>
