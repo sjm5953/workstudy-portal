@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="en" data-theme="green">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <!--font-->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap"
+      rel="stylesheet"
+    />
+    <!--tailwind-->
+    <link href="src/output.css" rel="stylesheet" />
+    <!--icons-->
+    <link
+      rel="stylesheet"
+      href="https://cdn-uicons.flaticon.com/4.0.0/uicons-regular-rounded/css/uicons-regular-rounded.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn-uicons.flaticon.com/4.0.0/uicons-bold-rounded/css/uicons-bold-rounded.css"
+    />
+    <!--chart-->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body class="h-screen overflow-hidden">
+    <!--main container-->
+    <div class="h-screen bg-neutral-100 flex overflow-hidden">
+      <!--sidebar-->
+      <div id="sidebar"></div>
+      <!--right-->
+      <div class="flex-1 flex flex-col overflow-hidden">
+        <!--header-->
+        <div id="header"></div>
+        <!--content-->
+        <div class="p-8 flex flex-col flex-1 overflow-hidden min-h-0">
+          <div
+            class="bg-base-100 shadow-md rounded-lg px-8 py-4 bg-linear-to-bl from-[#f3f520] to-[#4DB900] text-base-100 flex items-center justify-between"
+          >
+            <h1 class="uppercase font-black text-2xl">Orders</h1>
+          </div>
+          <div class="mt-4 flex-1 min-h-0">
+            <div
+              class="bg-base-100 rounded-lg shadow-md overflow-hidden h-full flex flex-col"
+            >
+              <div class="overflow-y-auto flex-1 min-h-0">
+                <table class="table">
+                  <thead class="sticky top-0 bg-base-100 z-10">
+                    <tr class="uppercase text-xs">
+                      <th>Date</th>
+                      <th>Status</th>
+                      <th>Supplier</th>
+                      <th>Total</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ordersTableBody">
+                    <tr>
+                      <td colspan="4" class="uppercase text-xs opacity-60">
+                        Loading orders...
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      id="orderDrawerOverlay"
+      class="hidden fixed inset-0 z-[9998] bg-black/40"
+    ></div>
+
+    <div
+      id="orderDrawer"
+      class="fixed top-0 right-0 z-[9999] h-screen w-full max-w-md bg-base-100 shadow-xl translate-x-full transition-transform duration-300 flex flex-col"
+    >
+      <div
+        class="p-6 border-b border-neutral-200 flex items-start justify-between"
+      >
+        <div>
+          <p class="text-xs uppercase opacity-60 font-bold">Order Date</p>
+          <h2 id="drawerOrderDate" class="text-2xl font-black uppercase"></h2>
+        </div>
+
+        <button id="closeOrderDrawer" class="btn btn-sm btn-circle">✕</button>
+      </div>
+
+      <div
+        id="orderDrawerContent"
+        class="p-6 overflow-y-auto flex-1 space-y-6"
+      ></div>
+    </div>
+    <script src="src/components.js"></script>
+    <script>
+      const AIRTABLE_TOKEN =
+        "path5D1SLsZnikHyD.8e47f28d9b3b2913d1ebf07e9b1beb8c0903a82bb49266f19cb98fb4021b0129";
+
+      const BASE_ID = "appYqZMGk18beV4qI";
+      const USERS_TABLE = "Users";
+
+      const INVENTORY_BASE_ID = "apptUAgpH6UuhPwYy";
+
+      const userId = localStorage.getItem("cpoUserId");
+
+      const ORDERS_TABLE = "orders";
+      const ordersTableBody = document.getElementById("ordersTableBody");
+
+      function formatDate(dateString) {
+        if (!dateString) return "";
+        const date = new Date(dateString);
+
+        return date.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
+      }
+
+      const ORDER_LINE_ITEMS_TABLE = "order_line_items";
+
+      const orderDrawerOverlay = document.getElementById("orderDrawerOverlay");
+      const orderDrawer = document.getElementById("orderDrawer");
+      const closeOrderDrawer = document.getElementById("closeOrderDrawer");
+      const drawerOrderDate = document.getElementById("drawerOrderDate");
+      const orderDrawerContent = document.getElementById("orderDrawerContent");
+
+      let allOrderRecords = [];
+
+      function formatCurrency(value) {
+        const amount = Number(value || 0);
+
+        return amount.toLocaleString("en-US", {
+          style: "currency",
+          currency: "USD",
+        });
+      }
+
+      function getOrderStatusClass(status) {
+        if (status === "Ordered") return "bg-amber-400 text-neutral";
+        if (status === "Shipped") return "bg-sky-400 text-base-100";
+        if (status === "Delivered") return "bg-lime-400 text-neutral";
+        if (status === "Cancelled") return "bg-red-400 text-base-100";
+        return "bg-neutral-300 text-neutral";
+      }
+
+      function renderOrders(records) {
+        if (!records || records.length === 0) {
+          ordersTableBody.innerHTML = `
+      <tr>
+        <td colspan="4" class="uppercase text-xs opacity-60">
+          No orders found.
+        </td>
+      </tr>
+    `;
+          return;
+        }
+
+        ordersTableBody.innerHTML = records
+          .map((record) => {
+            const fields = record.fields;
+            const statusClass = getOrderStatusClass(fields.status);
+
+            return `
+<tr class="uppercase text-sm cursor-pointer hover:bg-neutral-100"
+    onclick="openOrderDrawer('${record.id}')">
+          <td class="font-bold">${formatDate(fields.order_date)}</td>
+          <td>
+            <span class="rounded-full px-4 py-1 text-xs font-bold ${statusClass}">
+              ${fields.status || "—"}
+            </span>
+          </td>
+          <td>${fields.supplier || "—"}</td>
+          <td class="font-bold">${formatCurrency(fields.order_total)}</td>
+        </tr>
+      `;
+          })
+          .join("");
+      }
+
+      async function loadOrders() {
+        try {
+          ordersTableBody.innerHTML = `
+      <tr>
+        <td colspan="4" class="uppercase text-xs opacity-60">
+          Loading orders...
+        </td>
+      </tr>
+    `;
+
+          const url = `https://api.airtable.com/v0/${INVENTORY_BASE_ID}/${encodeURIComponent(
+            ORDERS_TABLE,
+          )}?sort%5B0%5D%5Bfield%5D=order_date&sort%5B0%5D%5Bdirection%5D=desc`;
+
+          const response = await fetch(url, {
+            headers: {
+              Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch orders");
+          }
+
+          const data = await response.json();
+          allOrderRecords = data.records;
+          renderOrders(allOrderRecords);
+        } catch (error) {
+          console.error(error);
+
+          ordersTableBody.innerHTML = `
+      <tr>
+        <td colspan="4" class="uppercase text-xs text-error font-bold">
+          Something went wrong loading orders.
+        </td>
+      </tr>
+    `;
+        }
+      }
+
+      function detailRow(label, value) {
+        return `
+    <div class="flex items-center justify-between gap-4 py-2 border-b border-neutral-100">
+      <span class="text-xs uppercase font-bold opacity-60">${label}</span>
+      <span class="text-sm font-bold text-right">${value || "—"}</span>
+    </div>
+  `;
+      }
+
+      function drawerSection(title, rows) {
+        return `
+    <section>
+      <h3 class="text-sm uppercase font-black mb-3">${title}</h3>
+      <div class="bg-neutral-100 rounded-lg p-4">
+        ${rows}
+      </div>
+    </section>
+  `;
+      }
+
+      async function fetchOrderLineItems(orderId) {
+        const formula = encodeURIComponent(
+          `FIND("${orderId}", ARRAYJOIN({order_id}))`,
+        );
+
+        const url = `https://api.airtable.com/v0/${INVENTORY_BASE_ID}/${encodeURIComponent(
+          ORDER_LINE_ITEMS_TABLE,
+        )}?filterByFormula=${formula}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) throw new Error("Failed to fetch order line items");
+
+        const data = await response.json();
+        return data.records;
+      }
+
+      function renderLineItems(records) {
+        if (!records || records.length === 0) {
+          return `<p class="text-xs uppercase font-bold opacity-60">No items found.</p>`;
+        }
+
+        return records
+          .map((record) => {
+            const f = record.fields;
+
+            return `
+        <div class="py-3 border-b border-neutral-200 last:border-b-0">
+<p class="font-black uppercase text-sm">
+${
+  Array.isArray(f.item_name_friendly)
+    ? f.item_name_friendly.join(", ")
+    : f.item_name_friendly || "Unnamed Item"
+}
+</p>
+          <p class="text-xs uppercase opacity-70 mt-1">
+            ${f.quantity ?? 0} (${f.units || ""}) x ${formatCurrency(f.price_per_case)} = 
+            <span class="font-bold">${formatCurrency(f.total_price)}</span>
+          </p>
+        </div>
+      `;
+          })
+          .join("");
+      }
+
+      async function openOrderDrawer(recordId) {
+        const record = allOrderRecords.find((order) => order.id === recordId);
+        if (!record) return;
+
+        const fields = record.fields;
+
+        drawerOrderDate.textContent = formatDate(fields.order_date);
+
+        orderDrawerContent.innerHTML = `
+    ${drawerSection(
+      "Details",
+      detailRow("Status", fields.status) +
+        detailRow("Expected Delivery", formatDate(fields.exp_delivery)) +
+        detailRow("Supplier", fields.supplier),
+    )}
+
+    ${drawerSection(
+      "Items Ordered",
+      `<p class="text-xs uppercase font-bold opacity-60">Loading items...</p>`,
+    )}
+  `;
+
+        orderDrawerOverlay.classList.remove("hidden");
+        orderDrawer.classList.remove("translate-x-full");
+
+        try {
+          const lineItems = await fetchOrderLineItems(fields.order_id);
+
+          orderDrawerContent.innerHTML = `
+      ${drawerSection(
+        "Details",
+        detailRow("Status", fields.status) +
+          detailRow("Expected Delivery", formatDate(fields.exp_delivery)) +
+          detailRow("Supplier", fields.supplier),
+      )}
+
+      ${drawerSection("Items Ordered", renderLineItems(lineItems))}
+    `;
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
+      function closeOrderSideDrawer() {
+        orderDrawerOverlay.classList.add("hidden");
+        orderDrawer.classList.add("translate-x-full");
+      }
+
+      closeOrderDrawer.addEventListener("click", closeOrderSideDrawer);
+      orderDrawerOverlay.addEventListener("click", closeOrderSideDrawer);
+
+      function setActiveNav() {
+        const currentPage = window.location.pathname.split("/").pop();
+        const links = document.querySelectorAll("[data-page]");
+
+        links.forEach((link) => {
+          if (link.dataset.page === currentPage) {
+            link.classList.add("navActive");
+
+            const details = link.closest("details");
+            if (details) details.open = true;
+          }
+        });
+      }
+
+      async function fetchUser() {
+        if (!userId) {
+          window.location.href = "auth.html";
+          return;
+        }
+
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          USERS_TABLE,
+        )}/${userId}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch user");
+        }
+
+        const data = await response.json();
+        const userFields = data.fields;
+
+        if (userFields.role === "Student") {
+          window.location.href = "student-portal.html";
+          return;
+        }
+
+        return userFields;
+      }
+
+      async function loadUserHeader() {
+        const avatarEl = document.getElementById("userAvatar");
+        const nameEl = document.getElementById("userName");
+        const roleEl = document.getElementById("userRole");
+        const displayNameSpan = document.getElementById("display_name");
+
+        try {
+          const user = await fetchUser();
+
+          avatarEl.src =
+            user.avatar_url ||
+            "https://img.daisyui.com/images/profile/demo/yellingcat@192.webp";
+
+          nameEl.textContent = user.display_name || "User";
+
+          if (displayNameSpan) {
+            displayNameSpan.textContent = user.display_name || "User";
+          }
+
+          if (user.role && user.role.length > 0) {
+            roleEl.textContent = "Loading...";
+            await loadRoleName(user.role[0]);
+          } else {
+            roleEl.textContent = "Standard";
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      async function loadRoleName(roleRecordId) {
+        const roleEl = document.getElementById("userRole");
+
+        const url = `https://api.airtable.com/v0/${BASE_ID}/Roles/${roleRecordId}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          roleEl.textContent = "Role";
+          return;
+        }
+
+        const data = await response.json();
+        roleEl.textContent = data.fields.name || "Role";
+      }
+
+      loadComponent("sidebar", "components/sidebar.html", () => {
+        setActiveNav();
+      });
+
+      loadComponent("header", "components/header.html", () => {
+        loadUserHeader();
+      });
+
+      const logoutBtn = document.getElementById("logoutBtn");
+
+      if (logoutBtn) {
+        logoutBtn.addEventListener("click", () => {
+          localStorage.removeItem("cpoUserId");
+          localStorage.removeItem("cpoUserEmail");
+          localStorage.removeItem("cpoDisplayName");
+        });
+      }
+
+      loadOrders();
+    </script>
+  </body>
+</html>
