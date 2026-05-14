@@ -1,0 +1,707 @@
+<!doctype html>
+<html lang="en" data-theme="green">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Page Title</title>
+
+    <!-- fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- tailwind -->
+    <link href="src/output.css" rel="stylesheet" />
+
+    <!-- icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdn-uicons.flaticon.com/4.0.0/uicons-regular-rounded/css/uicons-regular-rounded.css"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdn-uicons.flaticon.com/4.0.0/uicons-bold-rounded/css/uicons-bold-rounded.css"
+    />
+  </head>
+
+  <body class="h-screen overflow-hidden font-[Google_Sans_Flex]">
+    <!-- MAIN CONTAINER -->
+    <div class="h-screen bg-neutral-100 flex overflow-hidden">
+      <!-- SIDEBAR -->
+      <div id="sidebar"></div>
+
+      <!-- RIGHT SIDE -->
+      <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- HEADER -->
+        <div id="header"></div>
+
+        <!-- CONTENT -->
+        <div class="p-8 flex-1 min-h-0 flex flex-col overflow-hidden">
+          <!-- GREEN TITLE BAR -->
+          <div
+            class="bg-base-100 shadow-md rounded-lg px-8 py-4 bg-linear-to-bl from-[#f3f520] to-[#4DB900] text-base-100 flex items-center justify-between"
+          >
+            <div>
+              <h1 class="uppercase font-black text-2xl">Applicants</h1>
+            </div>
+
+            <!-- OPTIONAL ACTIONS -->
+            <div class="flex items-center gap-3">
+              <button
+                class="btn btn-sm rounded-full bg-base-100 text-neutral border-0 shadow-none"
+              >
+                + Add
+              </button>
+            </div>
+          </div>
+
+          <!-- PAGE CONTENT -->
+          <div class="mt-4 flex-1 min-h-0 flex flex-col">
+            <div class="mb-4 flex justify-end">
+              <select
+                id="applicantStatusFilter"
+                class="select select-bordered w-full max-w-xs rounded-lg"
+              >
+                <option value="all" selected>All</option>
+                <option value="active">Active</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
+            <div
+              class="bg-base-100 rounded-lg shadow-md overflow-hidden h-full flex flex-col"
+            >
+              <div class="overflow-y-auto flex-1 min-h-0">
+                <table class="table">
+                  <thead class="sticky top-0 bg-base-100 z-10">
+                    <tr class="uppercase text-xs">
+                      <th>Name</th>
+                      <th>Status</th>
+                      <th>App Date</th>
+                    </tr>
+                  </thead>
+
+                  <tbody id="applicantsTableBody">
+                    <tr>
+                      <td colspan="3" class="uppercase text-xs opacity-60">
+                        Loading applicants...
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      id="applicantDrawerOverlay"
+      class="hidden fixed inset-0 z-[9998] bg-black/40"
+    ></div>
+
+    <div
+      id="applicantDrawer"
+      class="fixed top-0 right-0 z-[9999] h-screen w-full max-w-md bg-base-100 shadow-xl translate-x-full transition-transform duration-300 flex flex-col"
+    >
+      <div
+        class="p-6 border-b border-neutral-200 flex items-start justify-between"
+      >
+        <div>
+          <p class="text-xs uppercase opacity-60 font-bold">Applicant</p>
+          <h2
+            id="drawerApplicantName"
+            class="text-2xl font-black uppercase"
+          ></h2>
+        </div>
+
+        <button id="closeApplicantDrawer" class="btn btn-sm btn-circle">
+          ✕
+        </button>
+      </div>
+
+      <div
+        id="applicantDrawerContent"
+        class="p-6 overflow-y-auto flex-1 space-y-6"
+      ></div>
+    </div>
+
+    <!-- COMPONENTS -->
+    <script src="src/components.js"></script>
+
+    <!-- SCRIPT -->
+    <script>
+      const AIRTABLE_TOKEN =
+        "path5D1SLsZnikHyD.8e47f28d9b3b2913d1ebf07e9b1beb8c0903a82bb49266f19cb98fb4021b0129";
+
+      const BASE_ID = "appYqZMGk18beV4qI";
+      const USERS_TABLE = "Users";
+
+      const userId = localStorage.getItem("cpoUserId");
+
+      const APPLICANTS_TABLE = "Applicants";
+
+      const applicantsTableBody = document.getElementById(
+        "applicantsTableBody",
+      );
+
+      const applicantDrawerOverlay = document.getElementById(
+        "applicantDrawerOverlay",
+      );
+      const applicantDrawer = document.getElementById("applicantDrawer");
+      const closeApplicantDrawer = document.getElementById(
+        "closeApplicantDrawer",
+      );
+      const drawerApplicantName = document.getElementById(
+        "drawerApplicantName",
+      );
+      const applicantDrawerContent = document.getElementById(
+        "applicantDrawerContent",
+      );
+
+      const applicantStatusFilter = document.getElementById(
+        "applicantStatusFilter",
+      );
+
+      let allApplicantRecords = [];
+
+      function applyApplicantFilter() {
+        const filterValue = applicantStatusFilter.value;
+
+        let filtered = [...allApplicantRecords];
+
+        if (filterValue === "active") {
+          filtered = filtered.filter((record) => {
+            const status = record.fields.Status || "";
+            return status !== "Hired" && status !== "Not Moving Forward";
+          });
+        }
+
+        if (filterValue === "completed") {
+          filtered = filtered.filter((record) => {
+            const status = record.fields.Status || "";
+            return status === "Hired" || status === "Not Moving Forward";
+          });
+        }
+
+        renderApplicants(filtered);
+      }
+
+      function formatDate(dateString) {
+        const date = new Date(dateString);
+        if (isNaN(date)) return "—";
+
+        return date.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
+      }
+
+      function getStatusClass(status) {
+        if (status === "Potential Applicant") {
+          return "bg-neutral-300 text-neutral";
+        }
+
+        if (status === "Interviewing") {
+          return "bg-amber-400 text-neutral";
+        }
+
+        if (status === "Hired") {
+          return "bg-primary text-base-100";
+        }
+
+        if (status === "Not Moving Forward") {
+          return "bg-red-400 text-base-100";
+        }
+
+        return "bg-neutral-300 text-neutral";
+      }
+
+      function detailRow(label, value, stacked = false) {
+        if (stacked) {
+          return `
+      <div class="py-2 border-b border-neutral-100">
+        <p class="text-xs uppercase font-bold opacity-60 mb-1">
+          ${label}
+        </p>
+
+        <p class="text-sm font-bold break-all">
+          ${value || "—"}
+        </p>
+      </div>
+    `;
+        }
+
+        return `
+    <div class="flex items-center justify-between gap-4 py-2 border-b border-neutral-100">
+      <span class="text-xs uppercase font-bold opacity-60">${label}</span>
+      <span class="text-sm font-bold text-right">${value || "—"}</span>
+    </div>
+  `;
+      }
+
+      function drawerSection(title, content) {
+        return `
+    <section>
+      <h3 class="text-sm uppercase font-black mb-3">${title}</h3>
+      <div class="bg-neutral-100 rounded-lg p-4">
+        ${content}
+      </div>
+    </section>
+  `;
+      }
+
+      function renderApplicants(records) {
+        if (!records || records.length === 0) {
+          applicantsTableBody.innerHTML = `
+      <tr>
+        <td colspan="3" class="uppercase text-xs opacity-60">
+          No applicants found.
+        </td>
+      </tr>
+    `;
+          return;
+        }
+
+        applicantsTableBody.innerHTML = records
+          .map((record) => {
+            const f = record.fields;
+
+            return `
+        <tr
+          class="uppercase text-sm cursor-pointer hover:bg-neutral-100"
+          onclick="openApplicantDrawer('${record.id}')"
+        >
+          <td class="font-bold">${f.Name || "Unnamed"}</td>
+
+          <td>
+            <span class="rounded-full px-4 py-1 text-xs font-bold ${getStatusClass(
+              f.Status,
+            )}">
+              ${f.Status || "—"}
+            </span>
+          </td>
+
+          <td>${formatDate(f["App Date"])}</td>
+        </tr>
+      `;
+          })
+          .join("");
+      }
+
+      async function loadApplicants() {
+        try {
+          const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+            APPLICANTS_TABLE,
+          )}`;
+
+          const response = await fetch(url, {
+            headers: {
+              Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch applicants");
+          }
+
+          const data = await response.json();
+
+          allApplicantRecords = data.records.sort((a, b) => {
+            const aName = (a.fields.Name || "").toLowerCase();
+            const bName = (b.fields.Name || "").toLowerCase();
+
+            return aName.localeCompare(bName);
+          });
+
+          applyApplicantFilter();
+        } catch (error) {
+          console.error(error);
+
+          applicantsTableBody.innerHTML = `
+      <tr>
+        <td colspan="3" class="uppercase text-xs text-error font-bold">
+          Something went wrong loading applicants.
+        </td>
+      </tr>
+    `;
+        }
+      }
+
+      function renderApplicantDrawer(record) {
+        const f = record.fields;
+
+        drawerApplicantName.textContent = f.Name || "Unnamed";
+
+        applicantDrawerContent.innerHTML = `
+    ${renderNextStepSection(record)}
+
+    ${drawerSection(
+      "Interviews",
+      detailRow("First Interview", formatDate(f["First Interview"])) +
+        detailRow("Second Interview", formatDate(f["Second Interview"])),
+    )}
+
+    ${drawerSection(
+      "Contact",
+      detailRow("Student Email", f["Student Email"], true) +
+        detailRow("Personal Email", f["Personal Email"], true),
+    )}
+  `;
+      }
+
+      function openApplicantDrawer(recordId) {
+        const record = allApplicantRecords.find((item) => item.id === recordId);
+        if (!record) return;
+
+        renderApplicantDrawer(record);
+
+        applicantDrawerOverlay.classList.remove("hidden");
+        applicantDrawer.classList.remove("translate-x-full");
+      }
+
+      function closeApplicantSideDrawer() {
+        applicantDrawerOverlay.classList.add("hidden");
+        applicantDrawer.classList.add("translate-x-full");
+      }
+
+      function toDateInputValue(dateString) {
+        if (!dateString) return "";
+
+        const date = new Date(dateString);
+        if (isNaN(date)) return "";
+
+        return date.toISOString().split("T")[0];
+      }
+
+      function renderNextStepSection(record) {
+        const f = record.fields;
+        const status = f.Status || "";
+
+        let content = "";
+
+        if (status === "Applicant") {
+          content = `
+      <p class="text-sm font-bold mb-3">Send First Interview Invite</p>
+      <button
+        class="btn btn-sm bg-neutral text-base-100 next-step-btn"
+        data-record-id="${record.id}"
+        data-next-status="First Interview - Initiated"
+      >
+        Sent
+      </button>
+    `;
+        } else if (status === "First Interview - Initiated") {
+          content = `
+      <p class="text-sm font-bold mb-3">When is the first interview?</p>
+      <input
+        id="firstInterviewInput"
+        type="date"
+        class="input input-bordered w-full mb-3"
+        value="${toDateInputValue(f["First Interview"])}"
+      />
+      <button
+        class="btn btn-sm bg-neutral text-base-100 schedule-interview-btn"
+        data-record-id="${record.id}"
+        data-date-field="First Interview"
+        data-input-id="firstInterviewInput"
+        data-next-status="First Interview - Scheduled"
+      >
+        Schedule
+      </button>
+    `;
+        } else if (status === "First Interview - Scheduled") {
+          content = `
+      <p class="text-sm font-bold mb-3">Has the first interview been completed?</p>
+      <button
+        class="btn btn-sm bg-neutral text-base-100 next-step-btn"
+        data-record-id="${record.id}"
+        data-next-status="First Interview - Completed"
+      >
+        Completed
+      </button>
+    `;
+        } else if (status === "First Interview - Completed") {
+          content = `
+      <p class="text-sm font-bold mb-3">Send the second interview invite</p>
+      <button
+        class="btn btn-sm bg-neutral text-base-100 next-step-btn"
+        data-record-id="${record.id}"
+        data-next-status="Second Interview - Initiated"
+      >
+        Sent
+      </button>
+    `;
+        } else if (status === "Second Interview - Initiated") {
+          content = `
+      <p class="text-sm font-bold mb-3">When is the second interview?</p>
+      <input
+        id="secondInterviewInput"
+        type="date"
+        class="input input-bordered w-full mb-3"
+        value="${toDateInputValue(f["Second Interview"])}"
+      />
+      <button
+        class="btn btn-sm bg-neutral text-base-100 schedule-interview-btn"
+        data-record-id="${record.id}"
+        data-date-field="Second Interview"
+        data-input-id="secondInterviewInput"
+        data-next-status="Second Interview - Scheduled"
+      >
+        Schedule
+      </button>
+    `;
+        } else if (status === "Second Interview - Scheduled") {
+          content = `
+      <p class="text-sm font-bold mb-3">Were they hired?</p>
+      <div class="flex gap-2">
+        <button
+          class="btn btn-sm bg-primary text-base-100 next-step-btn"
+          data-record-id="${record.id}"
+          data-next-status="Hired"
+        >
+          Yes
+        </button>
+
+        <button
+          class="btn btn-sm bg-red-400 text-base-100 next-step-btn"
+          data-record-id="${record.id}"
+          data-next-status="Not Moving Forward"
+        >
+          No
+        </button>
+      </div>
+    `;
+        } else {
+          content = `
+      <p class="text-xs uppercase font-bold opacity-60">
+        No next step available.
+      </p>
+    `;
+        }
+
+        return drawerSection("Next Step", content);
+      }
+
+      async function updateApplicantRecord(recordId, fieldsToUpdate) {
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          APPLICANTS_TABLE,
+        )}/${recordId}`;
+
+        const response = await fetch(url, {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            fields: fieldsToUpdate,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(errorText);
+          throw new Error("Failed to update applicant.");
+        }
+
+        return response.json();
+      }
+
+      function updateApplicantRecordInMemory(updatedRecord) {
+        allApplicantRecords = allApplicantRecords.map((record) => {
+          return record.id === updatedRecord.id ? updatedRecord : record;
+        });
+
+        applyApplicantFilter();
+        renderApplicantDrawer(updatedRecord);
+      }
+
+      function setActiveNav() {
+        const currentPage = window.location.pathname.split("/").pop();
+
+        const links = document.querySelectorAll("[data-page]");
+
+        links.forEach((link) => {
+          if (link.dataset.page === currentPage) {
+            link.classList.add("navActive");
+
+            const details = link.closest("details");
+
+            if (details) {
+              details.open = true;
+            }
+          }
+        });
+      }
+
+      async function fetchUser() {
+        if (!userId) {
+          window.location.href = "auth.html";
+          return;
+        }
+
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          USERS_TABLE,
+        )}/${userId}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch user");
+        }
+
+        const data = await response.json();
+        const userFields = data.fields;
+
+        // OPTIONAL STUDENT REDIRECT
+        if (userFields.role === "Student") {
+          window.location.href = "student-portal.html";
+          return;
+        }
+
+        return userFields;
+      }
+
+      async function loadRoleName(roleRecordId) {
+        const roleEl = document.getElementById("userRole");
+
+        const url = `https://api.airtable.com/v0/${BASE_ID}/Roles/${roleRecordId}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          roleEl.textContent = "Role";
+          return;
+        }
+
+        const data = await response.json();
+
+        roleEl.textContent = data.fields.name || "Role";
+      }
+
+      async function loadUserHeader() {
+        const avatarEl = document.getElementById("userAvatar");
+        const nameEl = document.getElementById("userName");
+        const roleEl = document.getElementById("userRole");
+
+        try {
+          const user = await fetchUser();
+
+          avatarEl.src =
+            user.avatar_url ||
+            "https://img.daisyui.com/images/profile/demo/yellingcat@192.webp";
+
+          nameEl.textContent = user.display_name || "User";
+
+          if (user.role && user.role.length > 0) {
+            roleEl.textContent = "Loading...";
+            await loadRoleName(user.role[0]);
+          } else {
+            roleEl.textContent = "Standard";
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      applicantStatusFilter.addEventListener("change", applyApplicantFilter);
+
+      document.addEventListener("click", async (event) => {
+        const nextStepBtn = event.target.closest(".next-step-btn");
+        if (!nextStepBtn) return;
+
+        nextStepBtn.disabled = true;
+        nextStepBtn.textContent = "Updating...";
+
+        try {
+          const updatedRecord = await updateApplicantRecord(
+            nextStepBtn.dataset.recordId,
+            {
+              Status: nextStepBtn.dataset.nextStatus,
+            },
+          );
+
+          updateApplicantRecordInMemory(updatedRecord);
+        } catch (error) {
+          console.error(error);
+          alert("Something went wrong updating the applicant.");
+        }
+      });
+
+      document.addEventListener("click", async (event) => {
+        const scheduleBtn = event.target.closest(".schedule-interview-btn");
+        if (!scheduleBtn) return;
+
+        const input = document.getElementById(scheduleBtn.dataset.inputId);
+        const dateValue = input.value;
+
+        if (!dateValue) {
+          alert("Please select a date.");
+          return;
+        }
+
+        scheduleBtn.disabled = true;
+        scheduleBtn.textContent = "Scheduling...";
+
+        try {
+          const updatedRecord = await updateApplicantRecord(
+            scheduleBtn.dataset.recordId,
+            {
+              [scheduleBtn.dataset.dateField]: dateValue,
+              Status: scheduleBtn.dataset.nextStatus,
+            },
+          );
+
+          updateApplicantRecordInMemory(updatedRecord);
+        } catch (error) {
+          console.error(error);
+          alert("Something went wrong scheduling the interview.");
+        }
+      });
+
+      closeApplicantDrawer.addEventListener("click", closeApplicantSideDrawer);
+      applicantDrawerOverlay.addEventListener(
+        "click",
+        closeApplicantSideDrawer,
+      );
+
+      // LOAD COMPONENTS
+      loadComponent("sidebar", "components/sidebar.html", () => {
+        setActiveNav();
+      });
+
+      loadComponent("header", "components/header.html", () => {
+        loadUserHeader();
+      });
+
+      // LOGOUT
+      const logoutBtn = document.getElementById("logoutBtn");
+
+      if (logoutBtn) {
+        logoutBtn.addEventListener("click", () => {
+          localStorage.removeItem("cpoUserId");
+          localStorage.removeItem("cpoUserEmail");
+          localStorage.removeItem("cpoDisplayName");
+        });
+      }
+
+      loadApplicants();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,614 @@
+<!doctype html>
+<html lang="en" data-theme="green">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Page Title</title>
+
+    <!-- fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- tailwind -->
+    <link href="src/output.css" rel="stylesheet" />
+
+    <!-- icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdn-uicons.flaticon.com/4.0.0/uicons-regular-rounded/css/uicons-regular-rounded.css"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdn-uicons.flaticon.com/4.0.0/uicons-bold-rounded/css/uicons-bold-rounded.css"
+    />
+  </head>
+
+  <body class="h-screen overflow-hidden font-[Google_Sans_Flex]">
+    <!-- MAIN CONTAINER -->
+    <div class="h-screen bg-neutral-100 flex overflow-hidden">
+      <!-- SIDEBAR -->
+      <div id="sidebar"></div>
+
+      <!-- RIGHT SIDE -->
+      <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- HEADER -->
+        <div id="header"></div>
+
+        <!-- CONTENT -->
+        <div class="p-8 flex-1 min-h-0 flex flex-col overflow-hidden">
+          <!-- GREEN TITLE BAR -->
+          <div
+            class="bg-base-100 shadow-md rounded-lg px-8 py-4 bg-linear-to-bl from-[#f3f520] to-[#4DB900] text-base-100 flex items-center justify-between"
+          >
+            <div>
+              <h1 class="uppercase font-black text-2xl">Active Employees</h1>
+            </div>
+          </div>
+
+          <!-- PAGE CONTENT -->
+          <div class="mt-8 flex-1 min-h-0 flex flex-col">
+            <div
+              class="bg-base-100 rounded-lg shadow-md overflow-hidden h-full flex flex-col"
+            >
+              <div class="overflow-y-auto flex-1 min-h-0">
+                <table class="table">
+                  <thead class="sticky top-0 bg-base-100 z-10">
+                    <tr class="uppercase text-xs">
+                      <th>Name</th>
+                      <th>Status</th>
+                      <th>Student Email</th>
+                    </tr>
+                  </thead>
+
+                  <tbody id="employeesTableBody">
+                    <tr>
+                      <td colspan="3" class="uppercase text-xs opacity-60">
+                        Loading employees...
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      id="employeeDrawerOverlay"
+      class="hidden fixed inset-0 z-[9998] bg-black/40"
+    ></div>
+
+    <div
+      id="employeeDrawer"
+      class="fixed top-0 right-0 z-[9999] h-screen w-full max-w-md bg-base-100 shadow-xl translate-x-full transition-transform duration-300 flex flex-col"
+    >
+      <div
+        class="p-6 border-b border-neutral-200 flex items-start justify-between"
+      >
+        <div>
+          <p class="text-xs uppercase opacity-60 font-bold">Employee</p>
+          <h2
+            id="drawerEmployeeName"
+            class="text-2xl font-black uppercase"
+          ></h2>
+          <span
+            id="drawerEmployeeStatus"
+            class="inline-block mt-2 rounded-full px-4 py-1 text-xs font-bold uppercase"
+          ></span>
+        </div>
+
+        <button id="closeEmployeeDrawer" class="btn btn-sm btn-circle">
+          ✕
+        </button>
+      </div>
+
+      <div
+        id="employeeDrawerContent"
+        class="p-6 overflow-y-auto flex-1 space-y-6"
+      ></div>
+    </div>
+
+    <!-- COMPONENTS -->
+    <script src="src/components.js"></script>
+
+    <!-- SCRIPT -->
+    <script>
+      const AIRTABLE_TOKEN =
+        "path5D1SLsZnikHyD.8e47f28d9b3b2913d1ebf07e9b1beb8c0903a82bb49266f19cb98fb4021b0129";
+      const BASE_ID = "appYqZMGk18beV4qI";
+      const USERS_TABLE = "Users";
+
+      const userId = localStorage.getItem("cpoUserId");
+
+      const ACTIVE_WORKSTUDIES_TABLE = "Active Workstudies";
+
+      const employeesTableBody = document.getElementById("employeesTableBody");
+
+      const SCHEDULE_TABLE = "Schedule";
+
+      const employeeDrawerOverlay = document.getElementById(
+        "employeeDrawerOverlay",
+      );
+      const employeeDrawer = document.getElementById("employeeDrawer");
+      const closeEmployeeDrawer = document.getElementById(
+        "closeEmployeeDrawer",
+      );
+      const drawerEmployeeName = document.getElementById("drawerEmployeeName");
+      const drawerEmployeeStatus = document.getElementById(
+        "drawerEmployeeStatus",
+      );
+      const employeeDrawerContent = document.getElementById(
+        "employeeDrawerContent",
+      );
+
+      let allEmployeeRecords = [];
+      let currentScheduleRecords = [];
+
+      function getStatusClass(status) {
+        if (status === "Active") {
+          return "bg-primary text-base-100";
+        }
+
+        if (status === "Concern") {
+          return "bg-amber-400 text-neutral";
+        }
+
+        if (status === "DNS") {
+          return "bg-red-400 text-base-100";
+        }
+
+        return "bg-neutral-300 text-neutral";
+      }
+
+      function renderEmployees(records) {
+        if (!records || records.length === 0) {
+          employeesTableBody.innerHTML = `
+      <tr>
+        <td colspan="3" class="uppercase text-xs opacity-60">
+          No active employees found.
+        </td>
+      </tr>
+    `;
+          return;
+        }
+
+        employeesTableBody.innerHTML = records
+          .map((record) => {
+            const fields = record.fields;
+
+            return `
+<tr
+  class="uppercase text-sm cursor-pointer hover:bg-neutral-100"
+  onclick="openEmployeeDrawer('${record.id}')"
+>
+          <td class="font-bold">
+            ${fields.Name || "Unnamed"}
+          </td>
+
+          <td>
+            <span class="rounded-full px-4 py-1 text-xs font-bold ${getStatusClass(
+              fields.Status,
+            )}">
+              ${fields.Status || "—"}
+            </span>
+          </td>
+
+          <td class="normal-case">
+${fields["Student Email"] || "—"}
+          </td>
+        </tr>
+      `;
+          })
+          .join("");
+      }
+
+      async function loadEmployees() {
+        try {
+          const formula = `AND(
+      {status} != "Terminated - Graduated",
+      {status} != "Terminated - Involuntary"
+    )`;
+
+          const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+            ACTIVE_WORKSTUDIES_TABLE,
+          )}?filterByFormula=${encodeURIComponent(formula)}`;
+
+          const response = await fetch(url, {
+            headers: {
+              Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch employees");
+          }
+
+          const data = await response.json();
+
+          allEmployeeRecords = data.records.sort((a, b) => {
+            const aName = (a.fields.Name || "").toLowerCase();
+            const bName = (b.fields.Name || "").toLowerCase();
+
+            return aName.localeCompare(bName);
+          });
+
+          renderEmployees(allEmployeeRecords);
+        } catch (error) {
+          console.error(error);
+
+          employeesTableBody.innerHTML = `
+      <tr>
+        <td colspan="3" class="uppercase text-xs text-error font-bold">
+          Something went wrong loading employees.
+        </td>
+      </tr>
+    `;
+        }
+      }
+
+      function detailRow(label, value, stacked = false) {
+        if (stacked) {
+          return `
+      <div class="py-2 border-b border-neutral-100">
+        <p class="text-xs uppercase font-bold opacity-60 mb-1">
+          ${label}
+        </p>
+
+        <p class="text-sm font-bold break-all">
+          ${value || "—"}
+        </p>
+      </div>
+    `;
+        }
+
+        return `
+    <div class="flex items-center justify-between gap-4 py-2 border-b border-neutral-100">
+      <span class="text-xs uppercase font-bold opacity-60">${label}</span>
+      <span class="text-sm font-bold text-right">${value || "—"}</span>
+    </div>
+  `;
+      }
+
+      function drawerSection(title, content) {
+        return `
+    <section>
+      <h3 class="text-sm uppercase font-black mb-3">${title}</h3>
+      <div class="bg-neutral-100 rounded-lg p-4">
+        ${content}
+      </div>
+    </section>
+  `;
+      }
+
+      function formatDate(dateString) {
+        const date = new Date(dateString);
+        if (isNaN(date)) return "—";
+
+        return date.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
+      }
+
+      function formatTime(dateString) {
+        const date = new Date(dateString);
+        if (isNaN(date)) return "—";
+
+        return date.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+        });
+      }
+
+      async function fetchScheduleRecord(recordId) {
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          SCHEDULE_TABLE,
+        )}/${recordId}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch schedule record");
+        }
+
+        return response.json();
+      }
+
+      async function fetchEmployeeSchedule(scheduleIds) {
+        if (!Array.isArray(scheduleIds) || scheduleIds.length === 0) {
+          return [];
+        }
+
+        const requests = scheduleIds.map((id) => fetchScheduleRecord(id));
+        return Promise.all(requests);
+      }
+
+      function renderScheduleList(records, filter = "All") {
+        let filtered = [...records];
+
+        if (filter !== "All") {
+          filtered = filtered.filter((record) => {
+            return record.fields.shift_status === filter;
+          });
+        }
+
+        if (filtered.length === 0) {
+          return `
+      <div class="text-xs uppercase opacity-60 font-bold">
+        No schedule records found.
+      </div>
+    `;
+        }
+
+        return filtered
+          .map((record) => {
+            const f = record.fields;
+
+            return `
+        <div class="py-3 border-b border-neutral-200 last:border-b-0">
+          <p class="text-sm font-black uppercase">
+            ${formatDate(f.shift_start)}
+          </p>
+          <p class="text-xs uppercase opacity-70 mt-1">
+            ${formatTime(f.shift_start)} - ${formatTime(f.shift_end)}
+          </p>
+          <span class="inline-block mt-2 rounded-full px-3 py-1 text-xs uppercase font-bold ${
+            f.shift_status === "Call Out"
+              ? "bg-red-400 text-base-100"
+              : f.shift_status === "No Show"
+                ? "bg-amber-400 text-neutral"
+                : "bg-neutral-300 text-neutral"
+          }">
+            ${f.shift_status || "Unconfirmed"}
+          </span>
+        </div>
+      `;
+          })
+          .join("");
+      }
+
+      function renderScheduleSection(activeTab = "All") {
+        return `
+    <section>
+      <h3 class="text-sm uppercase font-black mb-3">Schedule</h3>
+
+      <div class="tabs tabs-border text-primary mb-4">
+        ${["All", "Call Out", "No Show"]
+          .map(
+            (tab) => `
+              <button
+                class="tab schedule-tab ${activeTab === tab ? "tab-active" : ""}"
+                data-tab="${tab}"
+              >
+                ${tab}
+              </button>
+            `,
+          )
+          .join("")}
+      </div>
+
+      <div id="drawerScheduleList" class="bg-neutral-100 rounded-lg p-4">
+        ${renderScheduleList(currentScheduleRecords, activeTab)}
+      </div>
+    </section>
+  `;
+      }
+
+      function renderEmployeeDrawer(record) {
+        const f = record.fields;
+
+        drawerEmployeeName.textContent = f.Name || "Unnamed";
+        drawerEmployeeStatus.textContent = f.Status || "—";
+        drawerEmployeeStatus.className = `inline-block mt-2 rounded-full px-4 py-1 text-xs font-bold uppercase ${getStatusClass(
+          f.Status,
+        )}`;
+
+        employeeDrawerContent.innerHTML = `
+${drawerSection(
+  "Details",
+  detailRow("Start Date", formatDate(f["Start Date"])) +
+    detailRow("Max Hours", f["Max Hours"] ?? "—"),
+)}
+
+${drawerSection(
+  "Contact",
+  detailRow("Student Email", f["Student Email"], true) +
+    detailRow("Work Email", f["Work Email"], true),
+)}
+
+    ${renderScheduleSection("All")}
+  `;
+      }
+
+      async function openEmployeeDrawer(recordId) {
+        const record = allEmployeeRecords.find((item) => item.id === recordId);
+        if (!record) return;
+
+        currentScheduleRecords = [];
+
+        employeeDrawerOverlay.classList.remove("hidden");
+        employeeDrawer.classList.remove("translate-x-full");
+
+        renderEmployeeDrawer(record);
+
+        const scheduleIds = record.fields.Schedule || [];
+
+        const scheduleListEl = document.getElementById("drawerScheduleList");
+        scheduleListEl.innerHTML = `
+    <div class="text-xs uppercase opacity-60 font-bold">
+      Loading schedule...
+    </div>
+  `;
+
+        try {
+          currentScheduleRecords = await fetchEmployeeSchedule(scheduleIds);
+          renderEmployeeDrawer(record);
+        } catch (error) {
+          console.error(error);
+
+          scheduleListEl.innerHTML = `
+      <div class="text-xs uppercase text-error font-bold">
+        Something went wrong loading schedule.
+      </div>
+    `;
+        }
+      }
+
+      function closeEmployeeSideDrawer() {
+        employeeDrawerOverlay.classList.add("hidden");
+        employeeDrawer.classList.add("translate-x-full");
+      }
+
+      function setActiveNav() {
+        const currentPage = window.location.pathname.split("/").pop();
+
+        const links = document.querySelectorAll("[data-page]");
+
+        links.forEach((link) => {
+          if (link.dataset.page === currentPage) {
+            link.classList.add("navActive");
+
+            const details = link.closest("details");
+
+            if (details) {
+              details.open = true;
+            }
+          }
+        });
+      }
+
+      async function fetchUser() {
+        if (!userId) {
+          window.location.href = "auth.html";
+          return;
+        }
+
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          USERS_TABLE,
+        )}/${userId}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch user");
+        }
+
+        const data = await response.json();
+        const userFields = data.fields;
+
+        // OPTIONAL STUDENT REDIRECT
+        if (userFields.role === "Student") {
+          window.location.href = "student-portal.html";
+          return;
+        }
+
+        return userFields;
+      }
+
+      async function loadRoleName(roleRecordId) {
+        const roleEl = document.getElementById("userRole");
+
+        const url = `https://api.airtable.com/v0/${BASE_ID}/Roles/${roleRecordId}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          roleEl.textContent = "Role";
+          return;
+        }
+
+        const data = await response.json();
+
+        roleEl.textContent = data.fields.name || "Role";
+      }
+
+      async function loadUserHeader() {
+        const avatarEl = document.getElementById("userAvatar");
+        const nameEl = document.getElementById("userName");
+        const roleEl = document.getElementById("userRole");
+
+        try {
+          const user = await fetchUser();
+
+          avatarEl.src =
+            user.avatar_url ||
+            "https://img.daisyui.com/images/profile/demo/yellingcat@192.webp";
+
+          nameEl.textContent = user.display_name || "User";
+
+          if (user.role && user.role.length > 0) {
+            roleEl.textContent = "Loading...";
+            await loadRoleName(user.role[0]);
+          } else {
+            roleEl.textContent = "Standard";
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      // LOAD COMPONENTS
+      loadComponent("sidebar", "components/sidebar.html", () => {
+        setActiveNav();
+      });
+
+      loadComponent("header", "components/header.html", () => {
+        loadUserHeader();
+      });
+
+      closeEmployeeDrawer.addEventListener("click", closeEmployeeSideDrawer);
+      employeeDrawerOverlay.addEventListener("click", closeEmployeeSideDrawer);
+
+      document.addEventListener("click", (event) => {
+        const tab = event.target.closest(".schedule-tab");
+        if (!tab) return;
+
+        const scheduleListEl = document.getElementById("drawerScheduleList");
+        const tabs = document.querySelectorAll(".schedule-tab");
+
+        tabs.forEach((button) => button.classList.remove("tab-active"));
+        tab.classList.add("tab-active");
+
+        scheduleListEl.innerHTML = renderScheduleList(
+          currentScheduleRecords,
+          tab.dataset.tab,
+        );
+      });
+
+      // LOGOUT
+      const logoutBtn = document.getElementById("logoutBtn");
+
+      if (logoutBtn) {
+        logoutBtn.addEventListener("click", () => {
+          localStorage.removeItem("cpoUserId");
+          localStorage.removeItem("cpoUserEmail");
+          localStorage.removeItem("cpoDisplayName");
+        });
+      }
+
+      loadEmployees();
+    </script>
+  </body>
+</html>

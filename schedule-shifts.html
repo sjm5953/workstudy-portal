@@ -88,29 +88,13 @@
             </label>
           </div>
 
-          <div class="mt-4 flex gap-4 items-center flex-wrap">
-            <!-- Mode Select -->
-            <select id="filterMode" class="select select-bordered">
-              <option value="all">All</option>
-              <option value="between">Between</option>
-              <option value="status">Status</option>
-            </select>
-
-            <!-- Date Range -->
-            <div id="betweenFilters" class="hidden flex gap-2 items-center">
-              <input id="startDate" type="date" class="input input-bordered" />
-              <span class="text-xs opacity-60 uppercase">to</span>
-              <input id="endDate" type="date" class="input input-bordered" />
-            </div>
-
-            <!-- Status Filter -->
-            <div id="statusFilterWrap" class="hidden">
-              <select id="statusFilter" class="select select-bordered">
-                <option value="">All Statuses</option>
-                <option value="Unconfirmed">Unconfirmed</option>
-                <option value="Confirmed">Confirmed</option>
-              </select>
-            </div>
+          <div class="mt-4 flex justify-end">
+            <button
+              id="openSortFilterDrawer"
+              class="btn rounded-full bg-neutral text-base-100"
+            >
+              Sort/Filter
+            </button>
           </div>
 
           <div class="mt-4 flex-1 min-h-0">
@@ -221,6 +205,201 @@
         </div>
       </div>
     </div>
+
+    <div
+      id="sortFilterOverlay"
+      class="hidden fixed inset-0 z-[9998] bg-black/40"
+    ></div>
+
+    <div
+      id="sortFilterDrawer"
+      class="fixed top-0 right-0 z-[9999] h-screen w-full max-w-md bg-base-100 shadow-xl translate-x-full transition-transform duration-300 flex flex-col"
+    >
+      <div
+        class="p-6 border-b border-neutral-200 flex items-center justify-between"
+      >
+        <h2 class="text-2xl font-black uppercase">Sort / Filter</h2>
+        <button id="closeSortFilterDrawer" class="btn btn-sm btn-circle">
+          ✕
+        </button>
+      </div>
+
+      <div class="p-6 overflow-y-auto flex-1 space-y-8">
+        <section>
+          <h3 class="text-sm uppercase font-black mb-4">Filters</h3>
+
+          <div class="space-y-5">
+            <div>
+              <p class="text-xs uppercase font-bold opacity-60 mb-2">
+                Shift Date
+              </p>
+
+              <label class="flex items-center gap-2 mb-2">
+                <input
+                  type="radio"
+                  name="shiftDateMode"
+                  value="all"
+                  class="radio radio-sm"
+                  checked
+                />
+                <span class="text-sm font-bold uppercase">All</span>
+              </label>
+
+              <label class="flex items-center gap-2 mb-3">
+                <input
+                  type="radio"
+                  name="shiftDateMode"
+                  value="range"
+                  class="radio radio-sm"
+                />
+                <span class="text-sm font-bold uppercase">Range</span>
+              </label>
+
+              <div
+                id="shiftDateRangeWrap"
+                class="hidden grid grid-cols-2 gap-3"
+              >
+                <input
+                  id="drawerStartDate"
+                  type="date"
+                  class="input input-bordered w-full"
+                />
+                <input
+                  id="drawerEndDate"
+                  type="date"
+                  class="input input-bordered w-full"
+                />
+              </div>
+            </div>
+
+            <div>
+              <p class="text-xs uppercase font-bold opacity-60 mb-2">Status</p>
+
+              <div class="grid grid-cols-1 gap-2">
+                <label class="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    class="checkbox checkbox-sm status-filter"
+                    value="Requested"
+                    checked
+                  />
+                  <span class="text-sm uppercase font-bold">Requested</span>
+                </label>
+
+                <label class="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    class="checkbox checkbox-sm status-filter"
+                    value="Unconfirmed"
+                    checked
+                  />
+                  <span class="text-sm uppercase font-bold">Unconfirmed</span>
+                </label>
+
+                <label class="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    class="checkbox checkbox-sm status-filter"
+                    value="Confirmed"
+                    checked
+                  />
+                  <span class="text-sm uppercase font-bold">Confirmed</span>
+                </label>
+
+                <label class="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    class="checkbox checkbox-sm status-filter"
+                    value="Cancelled"
+                    checked
+                  />
+                  <span class="text-sm uppercase font-bold">Cancelled</span>
+                </label>
+
+                <label class="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    class="checkbox checkbox-sm status-filter"
+                    value="Call Out"
+                    checked
+                  />
+                  <span class="text-sm uppercase font-bold">Call Out</span>
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <p class="text-xs uppercase font-bold opacity-60 mb-2">
+                Shift Type
+              </p>
+
+              <div class="grid grid-cols-1 gap-2">
+                <label class="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    class="checkbox checkbox-sm type-filter"
+                    value="Morning"
+                    checked
+                  />
+                  <span class="text-sm uppercase font-bold">Morning</span>
+                </label>
+
+                <label class="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    class="checkbox checkbox-sm type-filter"
+                    value="Afternoon"
+                    checked
+                  />
+                  <span class="text-sm uppercase font-bold">Afternoon</span>
+                </label>
+
+                <label class="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    class="checkbox checkbox-sm type-filter"
+                    value="Evening"
+                    checked
+                  />
+                  <span class="text-sm uppercase font-bold">Evening</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="text-sm uppercase font-black mb-4">Sort</h3>
+
+          <div class="grid grid-cols-2 gap-3">
+            <select id="sortBySelect" class="select select-bordered w-full">
+              <option value="name">Name</option>
+              <option value="date" selected>Date</option>
+              <option value="type">Type</option>
+              <option value="status">Status</option>
+            </select>
+
+            <select
+              id="sortDirectionSelect"
+              class="select select-bordered w-full"
+            >
+              <option value="asc" selected>Ascending</option>
+              <option value="desc">Descending</option>
+            </select>
+          </div>
+        </section>
+      </div>
+
+      <div class="p-6 border-t border-neutral-200">
+        <button
+          id="applySortFilterBtn"
+          class="btn bg-neutral text-base-100 w-full"
+        >
+          Apply
+        </button>
+      </div>
+    </div>
+
     <script src="src/components.js"></script>
 
     <!-- SCRIPT -->
@@ -240,14 +419,6 @@
 
       const shiftSearchInput = document.getElementById("shiftSearchInput");
       let allShiftRecords = [];
-
-      const filterMode = document.getElementById("filterMode");
-      const betweenFilters = document.getElementById("betweenFilters");
-      const statusFilterWrap = document.getElementById("statusFilterWrap");
-
-      const startDateInput = document.getElementById("startDate");
-      const endDateInput = document.getElementById("endDate");
-      const statusFilter = document.getElementById("statusFilter");
 
       const requestConfirmationBtn = document.getElementById(
         "requestConfirmationBtn",
@@ -424,12 +595,6 @@
         return shiftDate >= startDate && shiftDate <= endDate;
       }
 
-      requestConfirmationBtn.addEventListener("click", () => {
-        renderRequestConfirmModal();
-        requestConfirmModal.classList.remove("hidden");
-        requestConfirmModal.classList.add("flex");
-      });
-
       closeRequestConfirmBtn.addEventListener("click", () => {
         requestConfirmModal.classList.add("hidden");
         requestConfirmModal.classList.remove("flex");
@@ -600,27 +765,78 @@
           : "Select All";
       });
 
-      function updateFilterUI() {
-        const mode = filterMode.value;
+      const openSortFilterDrawer = document.getElementById(
+        "openSortFilterDrawer",
+      );
+      const closeSortFilterDrawer = document.getElementById(
+        "closeSortFilterDrawer",
+      );
+      const sortFilterOverlay = document.getElementById("sortFilterOverlay");
+      const sortFilterDrawer = document.getElementById("sortFilterDrawer");
+      const applySortFilterBtn = document.getElementById("applySortFilterBtn");
 
-        betweenFilters.classList.toggle("hidden", mode !== "between");
-        statusFilterWrap.classList.toggle("hidden", mode !== "status");
+      const shiftDateRangeWrap = document.getElementById("shiftDateRangeWrap");
+      const drawerStartDate = document.getElementById("drawerStartDate");
+      const drawerEndDate = document.getElementById("drawerEndDate");
+
+      const statusFilters = document.querySelectorAll(".status-filter");
+      const typeFilters = document.querySelectorAll(".type-filter");
+
+      const sortBySelect = document.getElementById("sortBySelect");
+      const sortDirectionSelect = document.getElementById(
+        "sortDirectionSelect",
+      );
+
+      function getDateInputValue(date) {
+        return date.toISOString().split("T")[0];
       }
 
-      function filterShifts() {
+      function setDefaultFilterDates() {
+        const today = new Date();
+        const june30 = new Date(today.getFullYear(), 5, 30);
+
+        drawerStartDate.value = getDateInputValue(today);
+        drawerEndDate.value = getDateInputValue(june30);
+      }
+
+      function openFilterDrawer() {
+        sortFilterOverlay.classList.remove("hidden");
+        sortFilterDrawer.classList.remove("translate-x-full");
+      }
+
+      function closeFilterDrawer() {
+        sortFilterOverlay.classList.add("hidden");
+        sortFilterDrawer.classList.add("translate-x-full");
+      }
+
+      function getCheckedValues(selector) {
+        return Array.from(document.querySelectorAll(selector))
+          .filter((box) => box.checked)
+          .map((box) => box.value);
+      }
+
+      function applyShiftFiltersAndSort() {
         const searchTerm = shiftSearchInput.value.trim().toLowerCase();
-        const mode = filterMode.value;
+
+        const dateMode = document.querySelector(
+          'input[name="shiftDateMode"]:checked',
+        ).value;
+
+        const selectedStatuses = getCheckedValues(".status-filter");
+        const selectedTypes = getCheckedValues(".type-filter");
+
+        const sortBy = sortBySelect.value;
+        const sortDirection = sortDirectionSelect.value;
 
         let filtered = [...allShiftRecords];
 
-        // 🔹 MODE FILTERING
-        if (mode === "between") {
-          const start = startDateInput.value;
-          const end = endDateInput.value;
+        if (dateMode === "range") {
+          const start = drawerStartDate.value;
+          const end = drawerEndDate.value;
 
           if (start && end) {
-            const startDate = new Date(start);
-            const endDate = new Date(end);
+            const startDate = new Date(start + "T00:00:00");
+            const endDate = new Date(end + "T23:59:59");
 
             filtered = filtered.filter((record) => {
               const shiftDate = new Date(record.fields.shift_start);
@@ -629,17 +845,19 @@
           }
         }
 
-        if (mode === "status") {
-          const selectedStatus = statusFilter.value;
-
-          if (selectedStatus) {
-            filtered = filtered.filter(
-              (record) => record.fields.shift_status === selectedStatus,
-            );
-          }
+        if (selectedStatuses.length > 0) {
+          filtered = filtered.filter((record) => {
+            const status = record.fields.shift_status || "Unconfirmed";
+            return selectedStatuses.includes(status);
+          });
+        }
+        if (selectedTypes.length > 0 && selectedTypes.length < 3) {
+          filtered = filtered.filter((record) => {
+            const type = record.fields.shift_type || "";
+            return selectedTypes.includes(type);
+          });
         }
 
-        // 🔹 SEARCH FILTERING (applies on top of mode)
         if (searchTerm) {
           filtered = filtered.filter((record) => {
             const f = record.fields;
@@ -661,6 +879,42 @@
             );
           });
         }
+
+        filtered.sort((a, b) => {
+          const aFields = a.fields;
+          const bFields = b.fields;
+
+          let aValue = "";
+          let bValue = "";
+
+          if (sortBy === "name") {
+            aValue = getWorkstudyName(aFields);
+            bValue = getWorkstudyName(bFields);
+          }
+
+          if (sortBy === "date") {
+            aValue = new Date(aFields.shift_start).getTime();
+            bValue = new Date(bFields.shift_start).getTime();
+          }
+
+          if (sortBy === "type") {
+            aValue = aFields.shift_type || "";
+            bValue = bFields.shift_type || "";
+          }
+
+          if (sortBy === "status") {
+            aValue = aFields.shift_status || "Unconfirmed";
+            bValue = bFields.shift_status || "Unconfirmed";
+          }
+
+          if (typeof aValue === "number" && typeof bValue === "number") {
+            return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
+          }
+
+          return sortDirection === "asc"
+            ? String(aValue).localeCompare(String(bValue))
+            : String(bValue).localeCompare(String(aValue));
+        });
 
         renderShifts(filtered);
       }
@@ -834,7 +1088,7 @@
           });
 
           allShiftRecords = records;
-          renderShifts(allShiftRecords);
+          applyShiftFiltersAndSort();
         } catch (error) {
           console.error(error);
 
@@ -867,11 +1121,6 @@
         roleEl.textContent = data.fields.name || "Role";
       }
 
-      filterMode.addEventListener("change", () => {
-        updateFilterUI();
-        filterShifts();
-      });
-
       loadComponent("sidebar", "components/sidebar.html", () => {
         setActiveNav();
       });
@@ -880,11 +1129,30 @@
         loadUserHeader();
       });
 
-      startDateInput.addEventListener("change", filterShifts);
-      endDateInput.addEventListener("change", filterShifts);
-      statusFilter.addEventListener("change", filterShifts);
+      openSortFilterDrawer.addEventListener("click", openFilterDrawer);
+      closeSortFilterDrawer.addEventListener("click", closeFilterDrawer);
+      sortFilterOverlay.addEventListener("click", closeFilterDrawer);
 
-      shiftSearchInput.addEventListener("input", filterShifts);
+      function updateShiftDateRangeVisibility() {
+        const dateMode = document.querySelector(
+          'input[name="shiftDateMode"]:checked',
+        ).value;
+
+        shiftDateRangeWrap.classList.toggle("hidden", dateMode !== "range");
+      }
+
+      document
+        .querySelectorAll('input[name="shiftDateMode"]')
+        .forEach((radio) => {
+          radio.addEventListener("change", updateShiftDateRangeVisibility);
+        });
+
+      applySortFilterBtn.addEventListener("click", () => {
+        applyShiftFiltersAndSort();
+        closeFilterDrawer();
+      });
+
+      shiftSearchInput.addEventListener("input", applyShiftFiltersAndSort);
 
       const logoutBtn = document.getElementById("logoutBtn");
 
@@ -895,9 +1163,8 @@
           localStorage.removeItem("cpoDisplayName");
         });
       }
-
+      setDefaultFilterDates();
       loadShiftsTable();
-      updateFilterUI();
     </script>
   </body>
 </html>

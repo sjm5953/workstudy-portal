@@ -37,7 +37,7 @@
           <div
             class="bg-base-100 shadow-md rounded-lg px-8 py-10 bg-linear-to-bl from-[#f3f520] to-[#4DB900] text-base-100 from-10% flex flex-col gap-2"
           >
-            <h1 class="uppercase font-bold text-2xl">
+            <h1 class="uppercase font-bold text-3xl">
               Welcome, <span id="display_name">Username</span>
             </h1>
             <h2 class="font-semibold uppercase text-sm">
@@ -46,26 +46,49 @@
           </div>
           <div class="grid xl:grid-cols-[2fr_1fr] gap-8 mt-8">
             <!--left column-->
-            <div class="flex flex-col gap-8 min-w-0">
-              <!--stats-->
+            <div class="grid grid-cols-2 gap-8 min-w-0">
+              <!--WS stats-->
               <div class="stats shadow-md">
-                <div class="stat bg-base-100">
+                <div class="stat bg-base-100 relative">
                   <div class="stat-title uppercase">Active Workstudies</div>
                   <div id="activeWorkstudiesCount" class="stat-value text-4xl">
                     00
                   </div>
+                  <div class="absolute top-6 right-6 opacity-20 text-sm">
+                    <i class="fi fi-br-arrow-up-right"></i>
+                  </div>
                 </div>
-                <div class="stat bg-base-100">
+                <div class="stat bg-base-100 relative">
                   <div class="stat-title uppercase">Current Applicants</div>
                   <div id="applicantsCount" class="stat-value text-4xl">00</div>
+                  <div class="absolute top-6 right-6 opacity-20 text-sm">
+                    <i class="fi fi-br-arrow-up-right"></i>
+                  </div>
                 </div>
-                <div class="stat bg-base-100">
-                  <div class="stat-title uppercase">Low Stock Items</div>
-                  <div class="stat-value text-4xl">00</div>
+              </div>
+              <!--inventory stats-->
+              <div class="stats shadow-md">
+                <div class="stat bg-base-100 relative">
+                  <div class="stat-title uppercase">Low Stock</div>
+                  <div id="lowStockCount" class="stat-value text-4xl">00</div>
+                  <div class="absolute top-6 right-6 opacity-20 text-sm">
+                    <i class="fi fi-br-arrow-up-right"></i>
+                  </div>
+                </div>
+                <div class="stat bg-base-100 relative">
+                  <div class="stat-title uppercase">Active Orders</div>
+                  <div id="activeOrdersCount" class="stat-value text-4xl">
+                    00
+                  </div>
+                  <div class="absolute top-6 right-6 opacity-20 text-sm">
+                    <i class="fi fi-br-arrow-up-right"></i>
+                  </div>
                 </div>
               </div>
               <!--todays schedule card-->
-              <div class="bg-base-100 shadow-md rounded-lg flex flex-col">
+              <div
+                class="bg-base-100 shadow-md rounded-lg flex flex-col col-span-2"
+              >
                 <div
                   class="flex items-center justify-between px-8 py-4 border-b border-neutral-100"
                 >
@@ -81,6 +104,34 @@
                     class="text-xs font-bold uppercase text-primary"
                     >View Calendar</a
                   >
+                </div>
+              </div>
+              <!--low stock card-->
+              <div
+                class="bg-base-100 shadow-md rounded-lg flex flex-col col-span-2"
+              >
+                <div
+                  class="flex items-center justify-between px-8 py-4 border-b border-neutral-100"
+                >
+                  <h1 class="text-md uppercase font-bold">Low Stock</h1>
+                </div>
+
+                <div id="lowStockList" class="flex flex-col"></div>
+
+                <div class="inset-shadow-sm px-8 py-4 flex gap-6">
+                  <a
+                    href="inventory-list.html"
+                    class="text-xs font-bold uppercase text-primary"
+                  >
+                    View Inventory
+                  </a>
+
+                  <a
+                    href="inventory-orders.html"
+                    class="text-xs font-bold uppercase text-primary"
+                  >
+                    View Orders
+                  </a>
                 </div>
               </div>
             </div>
@@ -162,11 +213,100 @@
       const todaysScheduleList = document.getElementById("todaysScheduleList");
       let workstudyMap = {};
 
-      loadComponent("sidebar", "components/sidebar.html");
+      const INVENTORY_BASE_ID = "apptUAgpH6UuhPwYy";
+      const INVENTORY_TABLE = "Inventory";
+      const ORDERS_TABLE = "Orders";
 
-      loadComponent("header", "components/header.html", () => {
-        loadUserHeader();
-      });
+      const lowStockCountEl = document.getElementById("lowStockCount");
+      const activeOrdersCountEl = document.getElementById("activeOrdersCount");
+
+      const lowStockList = document.getElementById("lowStockList");
+
+      function formatDate(dateString) {
+        if (!dateString) return "—";
+
+        const date = new Date(dateString);
+        if (isNaN(date)) return "—";
+
+        return date.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
+      }
+
+      async function loadLowStockList() {
+        try {
+          const formula = `{stock_status} = "LOW"`;
+
+          const url = `https://api.airtable.com/v0/${INVENTORY_BASE_ID}/${encodeURIComponent(
+            INVENTORY_TABLE,
+          )}?filterByFormula=${encodeURIComponent(formula)}`;
+
+          const response = await fetch(url, {
+            headers: {
+              Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch low stock inventory");
+          }
+
+          const data = await response.json();
+
+          if (data.records.length === 0) {
+            lowStockList.innerHTML = `
+        <div class="px-8 py-4 text-xs uppercase opacity-60">
+          No low stock items found
+        </div>
+      `;
+            return;
+          }
+
+          lowStockList.innerHTML = data.records
+            .map((record) => {
+              const f = record.fields;
+
+              return `
+          <div class="px-8 py-4 flex items-center gap-8">
+            <span class="rounded-full bg-red-100 size-10 flex items-center justify-center">
+              <i class="fi fi-br-box-open pt-1"></i>
+            </span>
+
+            <div class="flex-1">
+              <h1 class="text-sm uppercase font-bold">
+                ${f.item_name || "Unnamed Item"}
+              </h1>
+
+              <div class="grid md:grid-cols-3 gap-2 mt-1 text-xs uppercase opacity-60">
+                <span>
+                  <strong>Current Stock:</strong> ${f.total_q ?? "—"}
+                </span>
+
+                <span>
+                  <strong>Last Ordered:</strong> ${formatDate(f.latest_order_date)}
+                </span>
+
+                <span>
+                  <strong>Order Status:</strong> ${f.latest_order_status || "—"}
+                </span>
+              </div>
+            </div>
+          </div>
+        `;
+            })
+            .join("");
+        } catch (err) {
+          console.error(err);
+
+          lowStockList.innerHTML = `
+      <div class="px-8 py-4 text-xs uppercase text-error">
+        Failed to load low stock items
+      </div>
+    `;
+        }
+      }
 
       function setActiveNav() {
         const currentPage = window.location.pathname.split("/").pop();
@@ -425,6 +565,51 @@
         activeWorkstudiesCountEl.textContent = data.records.length;
       }
 
+      async function loadLowStockCount() {
+        const formula = `{stock_status} = "LOW"`;
+
+        const url = `https://api.airtable.com/v0/${INVENTORY_BASE_ID}/${encodeURIComponent(
+          INVENTORY_TABLE,
+        )}?filterByFormula=${encodeURIComponent(formula)}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch low stock inventory");
+        }
+
+        const data = await response.json();
+        lowStockCountEl.textContent = data.records.length;
+      }
+
+      async function loadActiveOrdersCount() {
+        const formula = `OR(
+    {status} = "Ordered",
+    {status} = "Shipped"
+  )`;
+
+        const url = `https://api.airtable.com/v0/${INVENTORY_BASE_ID}/${encodeURIComponent(
+          ORDERS_TABLE,
+        )}?filterByFormula=${encodeURIComponent(formula)}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch active orders");
+        }
+
+        const data = await response.json();
+        activeOrdersCountEl.textContent = data.records.length;
+      }
+
       async function fetchUser() {
         if (!userId) {
           window.location.href = "auth.html";
@@ -528,8 +713,11 @@
 
       loadActiveWorkstudiesCount();
       loadApplicantsCount();
+      loadLowStockCount();
+      loadActiveOrdersCount();
       loadAnnouncements();
       loadTodaysSchedule();
+      loadLowStockList();
     </script>
   </body>
 </html>

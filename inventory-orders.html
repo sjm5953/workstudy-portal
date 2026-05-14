@@ -128,7 +128,134 @@
       const drawerOrderDate = document.getElementById("drawerOrderDate");
       const orderDrawerContent = document.getElementById("orderDrawerContent");
 
+      let currentOrderRecordId = null;
+      let currentOrderLineItems = [];
+      let isEditingOrder = false;
+
       let allOrderRecords = [];
+
+      function renderOrderDetails(record, lineItems) {
+        const fields = record.fields;
+
+        orderDrawerContent.innerHTML = `
+    <div class="flex justify-end gap-2">
+      ${
+        isEditingOrder
+          ? `
+            <button class="btn btn-sm" onclick="cancelOrderEdit()">Cancel</button>
+            <button class="btn btn-sm btn-primary" onclick="submitOrderEdit()">Submit</button>
+          `
+          : `<button class="btn btn-sm btn-primary" onclick="startOrderEdit()">Edit</button>`
+      }
+    </div>
+
+    ${drawerSection(
+      "Details",
+      isEditingOrder
+        ? renderOrderEditForm(fields)
+        : detailRow("Status", fields.status) +
+            detailRow("Expected Delivery", formatDate(fields.exp_delivery)) +
+            detailRow("Supplier", fields.supplier),
+    )}
+
+    ${drawerSection("Items Ordered", renderLineItems(lineItems))}
+  `;
+      }
+
+      function renderOrderEditForm(fields) {
+        return `
+    <label class="form-control mb-3">
+      <span class="label-text uppercase text-xs font-bold">Status</span>
+      <select id="editOrderStatus" class="select select-bordered w-full">
+        ${["Ordered", "Shipped", "Delivered", "Cancelled"]
+          .map(
+            (status) => `
+              <option value="${status}" ${fields.status === status ? "selected" : ""}>
+                ${status}
+              </option>
+            `,
+          )
+          .join("")}
+      </select>
+    </label>
+
+    <label class="form-control mb-3">
+      <span class="label-text uppercase text-xs font-bold">Expected Delivery</span>
+      <input
+        id="editOrderDelivery"
+        type="date"
+        class="input input-bordered w-full"
+        value="${fields.exp_delivery || ""}"
+      />
+    </label>
+
+    <label class="form-control">
+      <span class="label-text uppercase text-xs font-bold">Supplier</span>
+      <input
+        id="editOrderSupplier"
+        type="text"
+        class="input input-bordered w-full"
+        value="${fields.supplier || ""}"
+      />
+    </label>
+  `;
+      }
+
+      function startOrderEdit() {
+        isEditingOrder = true;
+        const record = allOrderRecords.find(
+          (order) => order.id === currentOrderRecordId,
+        );
+        renderOrderDetails(record, currentOrderLineItems);
+      }
+
+      function cancelOrderEdit() {
+        isEditingOrder = false;
+        const record = allOrderRecords.find(
+          (order) => order.id === currentOrderRecordId,
+        );
+        renderOrderDetails(record, currentOrderLineItems);
+      }
+
+      async function submitOrderEdit() {
+        const status = document.getElementById("editOrderStatus").value;
+        const expDelivery = document.getElementById("editOrderDelivery").value;
+        const supplier = document.getElementById("editOrderSupplier").value;
+
+        const url = `https://api.airtable.com/v0/${INVENTORY_BASE_ID}/${encodeURIComponent(
+          ORDERS_TABLE,
+        )}/${currentOrderRecordId}`;
+
+        const response = await fetch(url, {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            fields: {
+              status,
+              exp_delivery: expDelivery || null,
+              supplier,
+            },
+          }),
+        });
+
+        if (!response.ok) {
+          alert("Something went wrong updating this order.");
+          return;
+        }
+
+        const updatedRecord = await response.json();
+
+        allOrderRecords = allOrderRecords.map((record) =>
+          record.id === updatedRecord.id ? updatedRecord : record,
+        );
+
+        isEditingOrder = false;
+        renderOrders(allOrderRecords);
+        renderOrderDetails(updatedRecord, currentOrderLineItems);
+      }
 
       function formatCurrency(value) {
         const amount = Number(value || 0);
@@ -294,18 +421,15 @@ ${
         const record = allOrderRecords.find((order) => order.id === recordId);
         if (!record) return;
 
+        currentOrderRecordId = recordId;
+        currentOrderLineItems = [];
+        isEditingOrder = false;
+
         const fields = record.fields;
 
         drawerOrderDate.textContent = formatDate(fields.order_date);
 
         orderDrawerContent.innerHTML = `
-    ${drawerSection(
-      "Details",
-      detailRow("Status", fields.status) +
-        detailRow("Expected Delivery", formatDate(fields.exp_delivery)) +
-        detailRow("Supplier", fields.supplier),
-    )}
-
     ${drawerSection(
       "Items Ordered",
       `<p class="text-xs uppercase font-bold opacity-60">Loading items...</p>`,
@@ -316,18 +440,8 @@ ${
         orderDrawer.classList.remove("translate-x-full");
 
         try {
-          const lineItems = await fetchOrderLineItems(fields.order_id);
-
-          orderDrawerContent.innerHTML = `
-      ${drawerSection(
-        "Details",
-        detailRow("Status", fields.status) +
-          detailRow("Expected Delivery", formatDate(fields.exp_delivery)) +
-          detailRow("Supplier", fields.supplier),
-      )}
-
-      ${drawerSection("Items Ordered", renderLineItems(lineItems))}
-    `;
+          currentOrderLineItems = await fetchOrderLineItems(fields.order_id);
+          renderOrderDetails(record, currentOrderLineItems);
         } catch (error) {
           console.error(error);
         }
