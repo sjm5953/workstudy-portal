@@ -39,7 +39,7 @@
           <div
             class="bg-base-100 shadow-md rounded-lg px-8 py-4 bg-linear-to-bl from-[#f3f520] to-[#4DB900] text-base-100 flex items-center justify-between"
           >
-            <h1 class="uppercase font-black text-2xl">Supplies List</h1>
+            <h1 class="uppercase font-black text-2xl">Inventory List</h1>
           </div>
           <div class="mt-4">
             <label class="input w-full rounded-lg bg-base-100 shadow-md h-12">
@@ -145,7 +145,7 @@
 
         links.forEach((link) => {
           if (link.dataset.page === currentPage) {
-            link.classList.add("navActive");
+            link.classList.add("navSubActive");
 
             const details = link.closest("details");
             if (details) details.open = true;

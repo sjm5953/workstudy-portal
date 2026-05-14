@@ -237,6 +237,7 @@
             <option value="Confirmed">Confirmed</option>
             <option value="Requested">Requested</option>
             <option value="Call Out">Call Out</option>
+            <option value="No Show">No Show</option>
           </select>
         </div>
 
@@ -513,10 +514,23 @@
 
                 const status = fields.shift_status || "Unconfirmed";
 
-                const barColorClass =
-                  status === "Confirmed"
-                    ? "bg-primary text-base-100"
-                    : "bg-amber-400 text-neutral";
+                let barColorClass = "bg-amber-400 text-neutral";
+
+                if (status === "Confirmed") {
+                  barColorClass = "bg-primary text-base-100";
+                }
+
+                if (status === "Requested") {
+                  barColorClass = "bg-sky-400 text-base-100";
+                }
+
+                if (status === "Call Out") {
+                  barColorClass = "bg-red-400 text-base-100";
+                }
+
+                if (status === "No Show") {
+                  barColorClass = "bg-red-400 text-base-100";
+                }
 
                 return `
 <div
@@ -1165,6 +1179,10 @@
           }
 
           if (status === "Call Out") {
+            barColorClass = "bg-red-400 text-base-100";
+          }
+
+          if (status === "No Show") {
             barColorClass = "bg-red-400 text-base-100";
           }
 
