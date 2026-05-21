@@ -241,6 +241,67 @@
 
       const firstNameText = document.getElementById("firstNameText");
 
+      const TODO_TABLE = "To Do";
+
+      async function fetchUserConfirmationTodos() {
+        const user = await fetchUser();
+
+        const formula = `AND(
+    {title} = "Schedule Confirmation Requested",
+    FIND("${userId}", ARRAYJOIN({user}))
+  )`;
+
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          TODO_TABLE,
+        )}?filterByFormula=${encodeURIComponent(formula)}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch confirmation todos.");
+        }
+
+        const data = await response.json();
+        return data.records;
+      }
+
+      async function completeUserConfirmationTodos() {
+        const todoRecords = await fetchUserConfirmationTodos();
+
+        await Promise.all(
+          todoRecords.map((record) => {
+            const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+              TODO_TABLE,
+            )}/${record.id}`;
+
+            return fetch(url, {
+              method: "PATCH",
+              headers: {
+                Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                fields: {
+                  completed: true,
+                },
+              }),
+            });
+          }),
+        );
+      }
+
+      async function completeTodoIfNoMoreConfirmationsNeeded() {
+        const remainingShifts = await fetchNeedConfirmationShifts();
+
+        if (remainingShifts.length === 0) {
+          await completeUserConfirmationTodos();
+        }
+      }
+
       function showRequestsTab() {
         requestsTab.classList.add("tab-active");
         allShiftsTab.classList.remove("tab-active");
@@ -489,12 +550,36 @@
         return response.json();
       }
 
+      function getNextMondaySundayRange() {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const day = today.getDay(); // Sunday = 0, Monday = 1
+        const daysUntilMonday = day === 0 ? 1 : 8 - day;
+
+        const nextMonday = new Date(today);
+        nextMonday.setDate(today.getDate() + daysUntilMonday);
+        nextMonday.setHours(0, 0, 0, 0);
+
+        const nextSunday = new Date(nextMonday);
+        nextSunday.setDate(nextMonday.getDate() + 6);
+        nextSunday.setHours(23, 59, 59, 999);
+
+        return { nextMonday, nextSunday };
+      }
+
       async function fetchNeedConfirmationShifts() {
         const allShifts = await fetchAllUserShifts();
+        const { nextMonday, nextSunday } = getNextMondaySundayRange();
 
         return allShifts.filter((record) => {
+          const status = record.fields.shift_status || "Unconfirmed";
+          const shiftStart = new Date(record.fields.shift_start);
+
           return (
-            (record.fields.shift_status || "Unconfirmed") === "Unconfirmed"
+            status === "Unconfirmed" &&
+            shiftStart >= nextMonday &&
+            shiftStart <= nextSunday
           );
         });
       }
@@ -560,6 +645,9 @@
 
         try {
           await updateShiftStatus(confirmBtn.dataset.recordId, "Confirmed");
+
+          await completeTodoIfNoMoreConfirmationsNeeded();
+
           await loadNeedConfirmationShifts();
           await loadAllUserShifts();
         } catch (error) {
