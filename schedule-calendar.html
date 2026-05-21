@@ -71,6 +71,12 @@
                   <option value="week">Week</option>
                 </select>
 
+                <input
+                  id="calendarDatePicker"
+                  type="date"
+                  class="input input-bordered input-sm w-40"
+                />
+
                 <button id="todayBtn" class="btn btn-sm rounded-full">
                   Today
                 </button>
@@ -318,8 +324,18 @@
       const editShiftStatus = document.getElementById("editShiftStatus");
       const editShiftNotes = document.getElementById("editShiftNotes");
 
+      const calendarDatePicker = document.getElementById("calendarDatePicker");
+
       let allScheduleRecords = [];
       let activeWorkstudyMapGlobal = {};
+
+      function getLocalDateInputValue(date) {
+        const localDate = new Date(date);
+        localDate.setMinutes(
+          localDate.getMinutes() - localDate.getTimezoneOffset(),
+        );
+        return localDate.toISOString().split("T")[0];
+      }
 
       function populateEditWorkstudySelect(selectedId) {
         const sortedWorkstudies = [...activeWorkstudyRecords].sort((a, b) => {
@@ -1332,6 +1348,8 @@ ${draftRow}
     </div>
   `;
 
+        calendarDatePicker.value = getLocalDateInputValue(viewedDate);
+
         const [allRecords, workstudyMap] = await Promise.all([
           fetchScheduleRecords(),
           fetchActiveWorkstudiesMap(),
@@ -1384,6 +1402,15 @@ ${draftRow}
 
         renderWeekCalendar(shiftsForWeek, workstudyMap);
       }
+
+      calendarDatePicker.addEventListener("change", () => {
+        if (!calendarDatePicker.value) return;
+
+        viewedDate = new Date(calendarDatePicker.value + "T00:00:00");
+        viewedDate.setHours(0, 0, 0, 0);
+
+        loadScheduleView();
+      });
 
       prevDayBtn.addEventListener("click", () => {
         if (calendarView === "week") {
