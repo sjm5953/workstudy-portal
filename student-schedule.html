@@ -144,8 +144,11 @@
           </div>
           <div class="flex-1 min-h-0 mt-4 flex flex-col">
             <div role="tablist" class="tabs tabs-border text-primary">
-              <a id="allShiftsTab" role="tab" class="tab">All Shifts</a>
-              <a id="needConfirmationTab" role="tab" class="tab tab-active">
+              <a id="allShiftsTab" role="tab" class="tab tab-active">
+                All Shifts
+              </a>
+
+              <a id="needConfirmationTab" role="tab" class="tab">
                 Need Confirmation
               </a>
               <a id="requestsTab" role="tab" class="tab">Requests</a>
@@ -159,15 +162,32 @@
               ></div>
               <div
                 id="needConfirmationList"
-                class="hidden h-full overflow-y-auto divide-y divide-neutral-100"
+                class="h-full overflow-y-auto divide-y divide-neutral-100 hidden"
               ></div>
               <div
                 id="requestsPanel"
                 class="hidden h-full flex flex-col min-h-0"
               >
                 <div
-                  class="px-8 py-4 border-b border-neutral-100 flex justify-end"
+                  class="px-8 py-4 border-b border-neutral-100 flex flex-col"
                 >
+                  <h2 class="font-black uppercase text-sm">Needs Coverage</h2>
+                  <p class="text-sm opacity-60 mt-1">
+                    These are shifts that currently have no one scheduled. If
+                    you are able to take on of these shifts, click it below to
+                    sign up.
+                  </p>
+                </div>
+
+                <div
+                  id="openCoverageList"
+                  class="border-b border-neutral-100 divide-y divide-neutral-100"
+                ></div>
+
+                <div
+                  class="px-8 py-4 border-b border-neutral-100 flex justify-between items-center"
+                >
+                  <h2 class="font-black uppercase text-sm">My Requests</h2>
                   <button
                     id="newRequestBtn"
                     class="btn btn-sm bg-primary text-base-100 border-0"
@@ -175,6 +195,7 @@
                     New Request
                   </button>
                 </div>
+
                 <div
                   id="requestsList"
                   class="flex-1 min-h-0 overflow-y-auto divide-y divide-neutral-100"
@@ -200,6 +221,34 @@
           <button id="cancelRequestBtn" class="btn">Cancel</button>
           <button id="submitRequestBtn" class="btn bg-neutral text-base-100">
             Submit Request
+          </button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="claimCoverageModal" class="modal">
+      <div class="modal-box">
+        <h3 class="font-black text-2xl uppercase">Take This Shift?</h3>
+
+        <div class="mt-4 bg-neutral-100 rounded-lg p-4">
+          <p
+            id="claimCoverageDate"
+            class="font-black uppercase text-primary"
+          ></p>
+          <p id="claimCoverageTime" class="text-sm opacity-70 mt-1"></p>
+          <p
+            id="claimCoverageType"
+            class="text-xs uppercase font-bold opacity-60 mt-2"
+          ></p>
+        </div>
+
+        <div class="modal-action">
+          <button id="cancelClaimCoverageBtn" class="btn">Cancel</button>
+          <button
+            id="submitClaimCoverageBtn"
+            class="btn bg-neutral text-base-100"
+          >
+            Confirm Shift
           </button>
         </div>
       </div>
@@ -240,6 +289,23 @@
       const submitRequestBtn = document.getElementById("submitRequestBtn");
 
       const firstNameText = document.getElementById("firstNameText");
+
+      const DAILY_SHIFT_COVERAGE_TABLE = "Daily Shift Coverage";
+
+      const openCoverageList = document.getElementById("openCoverageList");
+
+      const claimCoverageModal = document.getElementById("claimCoverageModal");
+      const claimCoverageDate = document.getElementById("claimCoverageDate");
+      const claimCoverageTime = document.getElementById("claimCoverageTime");
+      const claimCoverageType = document.getElementById("claimCoverageType");
+      const cancelClaimCoverageBtn = document.getElementById(
+        "cancelClaimCoverageBtn",
+      );
+      const submitClaimCoverageBtn = document.getElementById(
+        "submitClaimCoverageBtn",
+      );
+
+      let selectedCoverageRecord = null;
 
       const TODO_TABLE = "To Do";
 
@@ -311,7 +377,157 @@
         allShiftsList.classList.add("hidden");
         needConfirmationList.classList.add("hidden");
 
+        loadOpenCoverageShifts();
         loadRequestedShifts();
+      }
+
+      function getShiftTypeName(value) {
+        if (!value) return "";
+        if (typeof value === "string") return value;
+        return value.name || "";
+      }
+
+      function getCoverageTimes(shiftType) {
+        if (shiftType === "Morning") {
+          return { start: "07:30", end: "11:30", label: "7:30 AM - 11:30 AM" };
+        }
+
+        if (shiftType === "Afternoon") {
+          return { start: "10:00", end: "16:00", label: "10:00 AM - 4:00 PM" };
+        }
+
+        if (shiftType === "Evening") {
+          return { start: "14:00", end: "18:00", label: "2:00 PM - 6:00 PM" };
+        }
+
+        return null;
+      }
+
+      function dateOnlyForInput(dateValue) {
+        if (!dateValue) return "";
+
+        if (typeof dateValue === "string") {
+          return dateValue.split("T")[0];
+        }
+
+        const year = dateValue.getFullYear();
+        const month = String(dateValue.getMonth() + 1).padStart(2, "0");
+        const day = String(dateValue.getDate()).padStart(2, "0");
+
+        return `${year}-${month}-${day}`;
+      }
+
+      function formatCoverageDate(dateValue) {
+        const dateOnly = dateOnlyForInput(dateValue);
+        const date = new Date(`${dateOnly}T12:00:00`);
+
+        return date.toLocaleDateString("en-US", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+        });
+      }
+
+      async function fetchOpenCoverageShifts() {
+        const formula = `{Count}=0`;
+
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          DAILY_SHIFT_COVERAGE_TABLE,
+        )}?filterByFormula=${encodeURIComponent(formula)}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch open coverage shifts.");
+        }
+
+        const data = await response.json();
+
+        const today = new Date();
+        today.setHours(23, 59, 59, 999);
+
+        return data.records
+          .filter((record) => {
+            const dateOnly = dateOnlyForInput(record.fields.Date);
+
+            // use noon to avoid timezone shifting
+            const shiftDate = new Date(`${dateOnly}T12:00:00`);
+
+            return shiftDate > today;
+          })
+          .sort((a, b) => {
+            const dateA = new Date(
+              `${dateOnlyForInput(a.fields.Date)}T12:00:00`,
+            );
+
+            const dateB = new Date(
+              `${dateOnlyForInput(b.fields.Date)}T12:00:00`,
+            );
+
+            return dateA - dateB;
+          });
+      }
+
+      function renderOpenCoverageShifts(records) {
+        if (records.length === 0) {
+          openCoverageList.innerHTML = `
+      <div class="px-8 py-4 text-xs uppercase opacity-60">
+        All shifts are currently filled.
+      </div>
+    `;
+          return;
+        }
+
+        openCoverageList.innerHTML = records
+          .map((record) => {
+            const fields = record.fields;
+            const shiftType = getShiftTypeName(fields["Shift Type"]);
+            const times = getCoverageTimes(shiftType);
+
+            if (!times) return "";
+
+            return `
+        <button
+          class="open-coverage-card w-full text-left px-8 py-4 hover:bg-neutral-100 transition-colors cursor-pointer"
+          data-record-id="${record.id}"
+        >
+          <div class="flex items-center gap-6">
+            <div class="flex-1">
+              <h1 class="uppercase font-bold text-sm text-primary">
+${formatCoverageDate(fields.Date)}
+              </h1>
+              <p class="text-sm opacity-60">
+                ${times.label}
+              </p>
+            </div>
+
+            <span class="rounded-full px-3 py-1 text-xs uppercase font-bold bg-sky-400 text-base-100">
+              ${shiftType}
+            </span>
+          </div>
+        </button>
+      `;
+          })
+          .join("");
+      }
+
+      async function loadOpenCoverageShifts() {
+        try {
+          const records = await fetchOpenCoverageShifts();
+          renderOpenCoverageShifts(records);
+        } catch (error) {
+          console.error(error);
+
+          openCoverageList.innerHTML = `
+      <div class="px-8 py-4 text-xs uppercase text-error font-bold">
+        Something went wrong loading open coverage shifts.
+      </div>
+    `;
+        }
       }
 
       function renderRequestRow() {
@@ -450,6 +666,33 @@
       newRequestBtn.addEventListener("click", openRequestModal);
       cancelRequestBtn.addEventListener("click", closeRequestModal);
 
+      document.addEventListener("click", async (event) => {
+        const card = event.target.closest(".open-coverage-card");
+        if (!card) return;
+
+        const records = await fetchOpenCoverageShifts();
+        selectedCoverageRecord = records.find(
+          (record) => record.id === card.dataset.recordId,
+        );
+
+        if (!selectedCoverageRecord) return;
+
+        const fields = selectedCoverageRecord.fields;
+        const shiftType = getShiftTypeName(fields["Shift Type"]);
+        const times = getCoverageTimes(shiftType);
+
+        claimCoverageDate.textContent = formatCoverageDate(fields.Date);
+        claimCoverageTime.textContent = times.label;
+        claimCoverageType.textContent = shiftType;
+
+        claimCoverageModal.showModal();
+      });
+
+      cancelClaimCoverageBtn.addEventListener("click", () => {
+        claimCoverageModal.close();
+        selectedCoverageRecord = null;
+      });
+
       addRequestRowBtn.addEventListener("click", () => {
         requestShiftRows.insertAdjacentHTML("beforeend", renderRequestRow());
       });
@@ -502,6 +745,90 @@
       });
 
       requestsTab.addEventListener("click", showRequestsTab);
+
+      async function claimCoverageShift() {
+        if (!selectedCoverageRecord) return;
+
+        const user = await fetchUser();
+        const linkedWorkstudies = user.linked_workstudy || [];
+
+        if (
+          !Array.isArray(linkedWorkstudies) ||
+          linkedWorkstudies.length === 0
+        ) {
+          throw new Error("No linked workstudy found for this user.");
+        }
+
+        const fields = selectedCoverageRecord.fields;
+        const shiftType = getShiftTypeName(fields["Shift Type"]);
+        const times = getCoverageTimes(shiftType);
+
+        if (!times) {
+          throw new Error("Invalid shift type.");
+        }
+
+        const dateOnly = dateOnlyForInput(fields.Date);
+
+        const shiftStart = new Date(`${dateOnly}T${times.start}:00`);
+        const shiftEnd = new Date(`${dateOnly}T${times.end}:00`);
+
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          SCHEDULE_TABLE,
+        )}`;
+
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            fields: {
+              workstudy_name: [linkedWorkstudies[0]],
+              shift_start: shiftStart.toISOString(),
+              shift_end: shiftEnd.toISOString(),
+              shift_type: [shiftType],
+              shift_status: "Unconfirmed",
+            },
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(errorText);
+          throw new Error("Failed to claim coverage shift.");
+        }
+
+        return response.json();
+      }
+
+      submitClaimCoverageBtn.addEventListener("click", async () => {
+        submitClaimCoverageBtn.disabled = true;
+        submitClaimCoverageBtn.textContent = "Submitting...";
+
+        try {
+          await claimCoverageShift();
+
+          submitClaimCoverageBtn.disabled = false;
+          submitClaimCoverageBtn.textContent = "Confirm Shift";
+
+          claimCoverageModal.close();
+          selectedCoverageRecord = null;
+
+          await loadOpenCoverageShifts();
+          await loadAllUserShifts();
+          await loadNeedConfirmationShifts();
+
+          alert("Shift added to your schedule.");
+        } catch (error) {
+          console.error(error);
+
+          submitClaimCoverageBtn.disabled = false;
+          submitClaimCoverageBtn.textContent = "Confirm Shift";
+
+          alert("Something went wrong claiming this shift.");
+        }
+      });
 
       function showAllShiftsTab() {
         allShiftsTab.classList.add("tab-active");
@@ -852,7 +1179,7 @@
       loadUserHeader();
       loadAllUserShifts();
       loadNeedConfirmationShifts();
-      showNeedConfirmationTab();
+      showAllShiftsTab();
     </script>
   </body>
 </html>
