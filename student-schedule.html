@@ -309,6 +309,42 @@
 
       const TODO_TABLE = "To Do";
 
+      async function fetchAllAirtableRecords(tableName, params = {}) {
+        let allRecords = [];
+        let offset = null;
+
+        do {
+          const queryParams = new URLSearchParams(params);
+
+          if (offset) {
+            queryParams.set("offset", offset);
+          }
+
+          const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+            tableName,
+          )}?${queryParams.toString()}`;
+
+          const response = await fetch(url, {
+            headers: {
+              Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+            },
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(errorText);
+            throw new Error(`Failed to fetch records from ${tableName}`);
+          }
+
+          const data = await response.json();
+
+          allRecords = allRecords.concat(data.records);
+          offset = data.offset;
+        } while (offset);
+
+        return allRecords;
+      }
+
       async function fetchUserConfirmationTodos() {
         const user = await fetchUser();
 
@@ -877,27 +913,27 @@ ${formatCoverageDate(fields.Date)}
         return response.json();
       }
 
-      function getNextMondaySundayRange() {
+      function getCurrentMondaySundayRange() {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
         const day = today.getDay(); // Sunday = 0, Monday = 1
-        const daysUntilMonday = day === 0 ? 1 : 8 - day;
+        const daysSinceMonday = day === 0 ? 6 : day - 1;
 
-        const nextMonday = new Date(today);
-        nextMonday.setDate(today.getDate() + daysUntilMonday);
-        nextMonday.setHours(0, 0, 0, 0);
+        const monday = new Date(today);
+        monday.setDate(today.getDate() - daysSinceMonday);
+        monday.setHours(0, 0, 0, 0);
 
-        const nextSunday = new Date(nextMonday);
-        nextSunday.setDate(nextMonday.getDate() + 6);
-        nextSunday.setHours(23, 59, 59, 999);
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        sunday.setHours(23, 59, 59, 999);
 
-        return { nextMonday, nextSunday };
+        return { monday, sunday };
       }
 
       async function fetchNeedConfirmationShifts() {
         const allShifts = await fetchAllUserShifts();
-        const { nextMonday, nextSunday } = getNextMondaySundayRange();
+        const { monday, sunday } = getCurrentMondaySundayRange();
 
         return allShifts.filter((record) => {
           const status = record.fields.shift_status || "Unconfirmed";
@@ -905,8 +941,8 @@ ${formatCoverageDate(fields.Date)}
 
           return (
             status === "Unconfirmed" &&
-            shiftStart >= nextMonday &&
-            shiftStart <= nextSunday
+            shiftStart >= monday &&
+            shiftStart <= sunday
           );
         });
       }
@@ -999,26 +1035,11 @@ ${formatCoverageDate(fields.Date)}
           return [];
         }
 
-        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
-          SCHEDULE_TABLE,
-        )}`;
+        const records = await fetchAllAirtableRecords(SCHEDULE_TABLE);
 
-        const response = await fetch(url, {
-          headers: {
-            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch schedule records");
-        }
-
-        const data = await response.json();
-
-        return data.records
+        return records
           .filter((record) => {
             const workstudyIds = record.fields.workstudy_name || [];
-
             return workstudyIds.some((id) => linkedWorkstudies.includes(id));
           })
           .sort((a, b) => {
