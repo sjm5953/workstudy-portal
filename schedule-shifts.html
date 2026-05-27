@@ -1048,22 +1048,35 @@
       }
 
       async function fetchScheduleRecords() {
-        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
-          SCHEDULE_TABLE,
-        )}`;
+        let allRecords = [];
+        let offset = null;
 
-        const response = await fetch(url, {
-          headers: {
-            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
-          },
-        });
+        do {
+          const url = new URL(
+            `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(SCHEDULE_TABLE)}`,
+          );
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch schedule records");
-        }
+          if (offset) {
+            url.searchParams.set("offset", offset);
+          }
 
-        const data = await response.json();
-        return data.records;
+          const response = await fetch(url, {
+            headers: {
+              Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch schedule records");
+          }
+
+          const data = await response.json();
+
+          allRecords = allRecords.concat(data.records);
+          offset = data.offset;
+        } while (offset);
+
+        return allRecords;
       }
 
       function renderShifts(records) {

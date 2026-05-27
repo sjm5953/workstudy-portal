@@ -370,22 +370,45 @@
           workstudyMap[r.id] = r.fields.Name || "Unnamed";
         });
       }
+      async function fetchAllScheduleRecords() {
+        let allRecords = [];
+        let offset = null;
+
+        do {
+          let url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+            SCHEDULE_TABLE,
+          )}`;
+
+          if (offset) {
+            url += `?offset=${offset}`;
+          }
+
+          const response = await fetch(url, {
+            headers: {
+              Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch schedule records");
+          }
+
+          const data = await response.json();
+
+          allRecords.push(...data.records);
+          offset = data.offset || null;
+        } while (offset);
+
+        return allRecords;
+      }
 
       async function loadTodaysSchedule() {
         try {
           await fetchWorkstudyMap();
 
-          const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
-            SCHEDULE_TABLE,
-          )}`;
+          const records = await fetchAllScheduleRecords();
 
-          const response = await fetch(url, {
-            headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` },
-          });
-
-          const data = await response.json();
-
-          const todaysShifts = data.records
+          const todaysShifts = records
             .filter((record) => {
               const f = record.fields;
               if (!f.shift_start) return false;
