@@ -178,6 +178,42 @@
       let viewedDate = new Date();
       viewedDate.setHours(0, 0, 0, 0);
 
+      async function fetchAllAirtableRecords(tableName, params = {}) {
+        let allRecords = [];
+        let offset = null;
+
+        do {
+          const queryParams = new URLSearchParams(params);
+
+          if (offset) {
+            queryParams.set("offset", offset);
+          }
+
+          const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+            tableName,
+          )}?${queryParams.toString()}`;
+
+          const response = await fetch(url, {
+            headers: {
+              Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+            },
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(errorText);
+            throw new Error(`Failed to fetch records from ${tableName}`);
+          }
+
+          const data = await response.json();
+
+          allRecords = allRecords.concat(data.records);
+          offset = data.offset;
+        } while (offset);
+
+        return allRecords;
+      }
+
       function getMonday(date) {
         const d = new Date(date);
         const day = d.getDay();
@@ -229,43 +265,15 @@
       }
 
       async function fetchScheduleRecords() {
-        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
-          SCHEDULE_TABLE,
-        )}`;
-
-        const response = await fetch(url, {
-          headers: {
-            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch schedule records.");
-        }
-
-        const data = await response.json();
-        return data.records;
+        return fetchAllAirtableRecords(SCHEDULE_TABLE);
       }
 
       async function fetchWorkstudyMap() {
-        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
-          ACTIVE_WORKSTUDIES_TABLE,
-        )}`;
-
-        const response = await fetch(url, {
-          headers: {
-            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch workstudies.");
-        }
-
-        const data = await response.json();
+        const records = await fetchAllAirtableRecords(ACTIVE_WORKSTUDIES_TABLE);
 
         const map = {};
-        data.records.forEach((record) => {
+
+        records.forEach((record) => {
           map[record.id] = record.fields.Name || "Unnamed";
         });
 
