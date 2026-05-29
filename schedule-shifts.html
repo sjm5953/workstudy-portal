@@ -427,6 +427,25 @@
         "requestConfirmationBtn",
       );
 
+      let activeUserDepartment = null;
+
+      function normalizeDepartment(value) {
+        if (!value) return [];
+
+        if (Array.isArray(value)) {
+          return value.map((item) => String(item).trim().toLowerCase());
+        }
+
+        return [String(value).trim().toLowerCase()];
+      }
+
+      function sameDepartment(recordDepartment) {
+        const userDepartments = normalizeDepartment(activeUserDepartment);
+        const recordDepartments = normalizeDepartment(recordDepartment);
+
+        return recordDepartments.some((dept) => userDepartments.includes(dept));
+      }
+
       requestConfirmationBtn.addEventListener("click", () => {
         requestStartDate.value = "";
         requestEndDate.value = "";
@@ -523,6 +542,7 @@
         }
 
         const data = await response.json();
+
         return data.records;
       }
 
@@ -967,6 +987,9 @@
         }
 
         const data = await response.json();
+
+        activeUserDepartment = data.fields.Department || null;
+
         return data.fields;
       }
 
@@ -1030,9 +1053,12 @@
         const data = await response.json();
 
         activeWorkstudyMap = {};
-        data.records.forEach((record) => {
-          activeWorkstudyMap[record.id] = record.fields.Name || "Unnamed";
-        });
+
+        data.records
+          .filter((record) => sameDepartment(record.fields.Department))
+          .forEach((record) => {
+            activeWorkstudyMap[record.id] = record.fields.Name || "Unnamed";
+          });
       }
 
       function getWorkstudyName(fields) {
@@ -1133,7 +1159,10 @@
             );
           });
 
-          allShiftRecords = records;
+          allShiftRecords = records.filter((record) => {
+            const workstudyId = record.fields.workstudy_name?.[0];
+            return !!activeWorkstudyMap[workstudyId];
+          });
           applyShiftFiltersAndSort();
         } catch (error) {
           console.error(error);
@@ -1166,14 +1195,6 @@
         const data = await response.json();
         roleEl.textContent = data.fields.name || "Role";
       }
-
-      loadComponent("sidebar", "components/sidebar.html", () => {
-        setActiveNav();
-      });
-
-      loadComponent("header", "components/header.html", () => {
-        loadUserHeader();
-      });
 
       openSortFilterDrawer.addEventListener("click", openFilterDrawer);
       closeSortFilterDrawer.addEventListener("click", closeFilterDrawer);
@@ -1214,8 +1235,16 @@
           localStorage.removeItem("cpoDisplayName");
         });
       }
-      setDefaultFilterDates();
-      loadShiftsTable();
+
+      loadComponent("sidebar", "components/sidebar.html", () => {
+        setActiveNav();
+      });
+
+      loadComponent("header", "components/header.html", async () => {
+        await loadUserHeader();
+        setDefaultFilterDates();
+        await loadShiftsTable();
+      });
     </script>
   </body>
 </html>

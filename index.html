@@ -222,6 +222,25 @@
 
       const lowStockList = document.getElementById("lowStockList");
 
+      let activeUserDepartment = null;
+
+      function normalizeDepartment(value) {
+        if (!value) return [];
+
+        if (Array.isArray(value)) {
+          return value.map((item) => String(item).trim().toLowerCase());
+        }
+
+        return [String(value).trim().toLowerCase()];
+      }
+
+      function sameDepartment(recordDepartment) {
+        const userDepartments = normalizeDepartment(activeUserDepartment);
+        const recordDepartments = normalizeDepartment(recordDepartment);
+
+        return recordDepartments.some((dept) => userDepartments.includes(dept));
+      }
+
       function formatDate(dateString) {
         if (!dateString) return "—";
 
@@ -340,7 +359,7 @@
         const ids = fields.workstudy_name;
         if (!Array.isArray(ids) || ids.length === 0) return "Unassigned";
 
-        return ids.map((id) => workstudyMap[id] || "Unknown").join(", ");
+        return ids.map((id) => workstudyMap[id]?.name || "Unknown").join(", ");
       }
 
       function isToday(dateString) {
@@ -366,10 +385,15 @@
         const data = await response.json();
 
         workstudyMap = {};
+
         data.records.forEach((r) => {
-          workstudyMap[r.id] = r.fields.Name || "Unnamed";
+          workstudyMap[r.id] = {
+            name: r.fields.Name || "Unnamed",
+            department: r.fields.Department,
+          };
         });
       }
+
       async function fetchAllScheduleRecords() {
         let allRecords = [];
         let offset = null;
@@ -412,7 +436,12 @@
             .filter((record) => {
               const f = record.fields;
               if (!f.shift_start) return false;
-              return isToday(f.shift_start);
+              if (!isToday(f.shift_start)) return false;
+
+              const workstudyId = f.workstudy_name?.[0];
+              const workstudy = workstudyMap[workstudyId];
+
+              return sameDepartment(workstudy?.department);
             })
             .sort((a, b) => {
               return (
@@ -561,7 +590,17 @@
         }
 
         const data = await response.json();
-        applicantsCountEl.textContent = data.records.length;
+
+        console.log(
+          "Applicant departments:",
+          data.records.map((r) => r.fields.Department),
+        );
+
+        const departmentApplicants = data.records.filter((record) =>
+          sameDepartment(record.fields.Department),
+        );
+
+        applicantsCountEl.textContent = departmentApplicants.length;
       }
 
       async function loadActiveWorkstudiesCount() {
@@ -585,7 +624,17 @@
         }
 
         const data = await response.json();
-        activeWorkstudiesCountEl.textContent = data.records.length;
+
+        console.log(
+          "Workstudy departments:",
+          data.records.map((r) => r.fields.Department),
+        );
+
+        const departmentWorkstudies = data.records.filter((record) =>
+          sameDepartment(record.fields.Department),
+        );
+
+        activeWorkstudiesCountEl.textContent = departmentWorkstudies.length;
       }
 
       async function loadLowStockCount() {
@@ -657,6 +706,10 @@
 
         const userFields = data.fields;
 
+        activeUserDepartment = userFields.Department || null;
+
+        console.log("Active user department:", activeUserDepartment);
+
         // redirect students
         if (userFields.role === "Student") {
           window.location.href = "student-portal.html";
@@ -721,7 +774,7 @@
       });
 
       loadComponent("header", "components/header.html", () => {
-        loadUserHeader();
+        initDashboard();
       });
 
       const logoutBtn = document.getElementById("logoutBtn");
@@ -734,13 +787,19 @@
         });
       }
 
-      loadActiveWorkstudiesCount();
-      loadApplicantsCount();
-      loadLowStockCount();
-      loadActiveOrdersCount();
-      loadAnnouncements();
-      loadTodaysSchedule();
-      loadLowStockList();
+      async function initDashboard() {
+        await loadUserHeader();
+
+        await Promise.all([
+          loadActiveWorkstudiesCount(),
+          loadApplicantsCount(),
+          loadLowStockCount(),
+          loadActiveOrdersCount(),
+          loadAnnouncements(),
+          loadTodaysSchedule(),
+          loadLowStockList(),
+        ]);
+      }
     </script>
   </body>
 </html>

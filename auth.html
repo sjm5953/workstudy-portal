@@ -32,75 +32,118 @@
         <span class="text-primary">CPO</span> Portal
       </h1>
 
-      <div
-        role="tablist"
-        class="tabs tabs-border w-full uppercase font-bold text-primary mt-4"
-      >
-        <button id="loginTab" role="tab" class="tab tab-active w-1/2">
-          Login
-        </button>
-        <button id="signupTab" role="tab" class="tab w-1/2">Signup</button>
+      <div id="roleChoiceScreen" class="w-full mt-8">
+        <h2 class="text-center font-black uppercase text-xl mb-6">
+          What is your role?
+        </h2>
+
+        <div class="grid grid-cols-2 gap-4">
+          <button id="chooseAdminBtn" class="btn h-24 flex-col">
+            <i class="fi fi-br-user-gear text-2xl"></i>
+            Admin
+          </button>
+
+          <button id="chooseStudentBtn" class="btn h-24 flex-col">
+            <i class="fi fi-br-graduation-cap text-2xl"></i>
+            Student
+          </button>
+        </div>
       </div>
 
-      <!-- login -->
-      <div id="loginForm" class="flex flex-col w-full mt-8 uppercase">
-        <label class="label font-bold text-sm">Email</label>
-        <input
-          id="loginEmail"
-          type="text"
-          class="input w-full h-12 rounded-lg"
-        />
-
-        <label class="label font-bold text-sm mt-4">Password</label>
-        <input
-          id="loginPassword"
-          type="password"
-          class="input w-full h-12 rounded-lg"
-        />
-
-        <button
-          id="loginBtn"
-          class="btn border-0 shadow-none bg-linear-to-bl from-[#f3f520] to-[#4DB900] mt-8 text-base-100 from-10% h-14 font-bold uppercase text-lg rounded-lg"
+      <div id="authScreen" class="hidden w-full flex flex-col items-center">
+        <div
+          role="tablist"
+          class="tabs tabs-border w-full uppercase font-bold text-primary mt-4"
         >
-          Login
-        </button>
+          <button id="loginTab" role="tab" class="tab tab-active w-1/2">
+            Login
+          </button>
+          <button id="signupTab" role="tab" class="tab w-1/2">Signup</button>
+        </div>
+
+        <!-- login -->
+        <div id="loginForm" class="flex flex-col w-full mt-8 uppercase">
+          <label class="label font-bold text-sm">Email</label>
+          <input
+            id="loginEmail"
+            type="text"
+            class="input w-full h-12 rounded-lg"
+          />
+
+          <label class="label font-bold text-sm mt-4">Password</label>
+          <input
+            id="loginPassword"
+            type="password"
+            class="input w-full h-12 rounded-lg"
+          />
+
+          <button
+            id="loginBtn"
+            class="btn border-0 shadow-none bg-linear-to-bl from-[#f3f520] to-[#4DB900] mt-8 text-base-100 from-10% h-14 font-bold uppercase text-lg rounded-lg"
+          >
+            Login
+          </button>
+        </div>
+
+        <!-- signup -->
+        <div id="signupForm" class="hidden flex flex-col w-full mt-8 uppercase">
+          <div id="studentSignupFields" class="hidden">
+            <label class="label font-bold text-sm">First Name</label>
+            <input
+              id="signupFirstName"
+              type="text"
+              class="input w-full h-12 rounded-lg"
+            />
+
+            <label class="label font-bold text-sm mt-4">Last Name</label>
+            <input
+              id="signupLastName"
+              type="text"
+              class="input w-full h-12 rounded-lg"
+            />
+
+            <label class="label font-bold text-sm mt-4">Department</label>
+            <select id="signupDepartment" class="select w-full h-12 rounded-lg">
+              <option value="">Select Department</option>
+              <option value="Front Desk">Front Desk</option>
+              <option value="Lab">Lab</option>
+            </select>
+          </div>
+
+          <label class="label font-bold text-sm mt-4">Email</label>
+          <input
+            id="signupEmail"
+            type="email"
+            class="input w-full h-12 rounded-lg"
+          />
+
+          <label class="label font-bold text-sm mt-4">Display Name</label>
+          <input
+            id="signupDisplayName"
+            type="text"
+            class="input w-full h-12 rounded-lg"
+          />
+
+          <label class="label font-bold text-sm mt-4">Password</label>
+          <input
+            id="signupPassword"
+            type="password"
+            class="input w-full h-12 rounded-lg"
+          />
+
+          <button
+            id="signupBtn"
+            class="btn border-0 shadow-none bg-linear-to-bl from-[#f3f520] to-[#4DB900] mt-8 text-base-100 from-10% h-14 font-bold uppercase text-lg rounded-lg"
+          >
+            Create Account
+          </button>
+        </div>
+
+        <p
+          id="authMessage"
+          class="text-xs uppercase font-bold opacity-60 mt-4"
+        ></p>
       </div>
-
-      <!-- signup -->
-      <div id="signupForm" class="hidden flex flex-col w-full mt-8 uppercase">
-        <label class="label font-bold text-sm">Email</label>
-        <input
-          id="signupEmail"
-          type="email"
-          class="input w-full h-12 rounded-lg"
-        />
-
-        <label class="label font-bold text-sm mt-4">Display Name</label>
-        <input
-          id="signupDisplayName"
-          type="text"
-          class="input w-full h-12 rounded-lg"
-        />
-
-        <label class="label font-bold text-sm mt-4">Password</label>
-        <input
-          id="signupPassword"
-          type="password"
-          class="input w-full h-12 rounded-lg"
-        />
-
-        <button
-          id="signupBtn"
-          class="btn border-0 shadow-none bg-linear-to-bl from-[#f3f520] to-[#4DB900] mt-8 text-base-100 from-10% h-14 font-bold uppercase text-lg rounded-lg"
-        >
-          Create Account
-        </button>
-      </div>
-
-      <p
-        id="authMessage"
-        class="text-xs uppercase font-bold opacity-60 mt-4"
-      ></p>
     </div>
 
     <script>
@@ -120,6 +163,80 @@
 
       const loginBtn = document.getElementById("loginBtn");
       const signupBtn = document.getElementById("signupBtn");
+
+      const ACTIVE_WORKSTUDIES_TABLE = "Active Workstudies";
+      const ROLES_TABLE = "Roles";
+
+      let selectedRole = null;
+
+      const roleChoiceScreen = document.getElementById("roleChoiceScreen");
+      const authScreen = document.getElementById("authScreen");
+      const chooseAdminBtn = document.getElementById("chooseAdminBtn");
+      const chooseStudentBtn = document.getElementById("chooseStudentBtn");
+      const studentSignupFields = document.getElementById(
+        "studentSignupFields",
+      );
+
+      function chooseRole(role) {
+        selectedRole = role;
+
+        roleChoiceScreen.classList.add("hidden");
+        authScreen.classList.remove("hidden");
+
+        studentSignupFields.classList.toggle("hidden", role !== "Student");
+
+        authMessage.textContent = "";
+      }
+
+      chooseAdminBtn.addEventListener("click", () => chooseRole("Admin"));
+      chooseStudentBtn.addEventListener("click", () => chooseRole("Student"));
+
+      async function fetchRoleIdByName(roleName) {
+        const formula = `{name} = "${roleName}"`;
+
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          ROLES_TABLE,
+        )}?filterByFormula=${encodeURIComponent(formula)}`;
+
+        const response = await fetch(url, {
+          headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` },
+        });
+
+        const data = await response.json();
+        return data.records[0]?.id || null;
+      }
+
+      async function createActiveWorkstudy({
+        firstName,
+        lastName,
+        department,
+        email,
+      }) {
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          ACTIVE_WORKSTUDIES_TABLE,
+        )}`;
+
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            fields: {
+              Name: `${lastName}, ${firstName}`,
+              "First Name": firstName,
+              "Last Name": lastName,
+              Status: "Active",
+              Department: department,
+              "Student Email": email,
+            },
+          }),
+        });
+
+        if (!response.ok) throw new Error(await response.text());
+        return response.json();
+      }
 
       function showLogin() {
         loginForm.classList.remove("hidden");
@@ -144,7 +261,36 @@
       loginTab.addEventListener("click", showLogin);
       signupTab.addEventListener("click", showSignup);
 
-      async function createUser({ email, displayName, password }) {
+      async function createUser({
+        email,
+        displayName,
+        password,
+        firstName,
+        roleName,
+        linkedWorkstudyId,
+      }) {
+        const roleId = await fetchRoleIdByName(roleName);
+
+        if (!roleId) {
+          throw new Error(`Could not find ${roleName} role.`);
+        }
+
+        const fields = {
+          email,
+          display_name: displayName,
+          password,
+          first_name: firstName || displayName,
+          role: [roleId],
+        };
+
+        if (roleName === "Student") {
+          fields.avatar_url = `https://api.dicebear.com/9.x/bottts-neutral/svg?backgroundColor=7cb342,c0ca33,fdd835&seed=${encodeURIComponent(
+            displayName,
+          )}`;
+
+          fields.linked_workstudy = [linkedWorkstudyId];
+        }
+
         const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
           USERS_TABLE,
         )}`;
@@ -155,24 +301,10 @@
             Authorization: `Bearer ${AIRTABLE_TOKEN}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            fields: {
-              email: email,
-              display_name: displayName,
-              password: password,
-
-              // Linked record fields must be arrays of Airtable record IDs
-              role: [STANDARD_ROLE_ID],
-            },
-          }),
+          body: JSON.stringify({ fields }),
         });
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(errorText);
-          throw new Error("Could not create user.");
-        }
-
+        if (!response.ok) throw new Error(await response.text());
         return response.json();
       }
 
@@ -191,19 +323,54 @@
         signupBtn.disabled = true;
         signupBtn.textContent = "Creating...";
 
-        try {
-          await createUser({ email, displayName, password });
+        let linkedWorkstudyId = null;
+        let firstName = "";
 
-          authMessage.textContent = "Account created. You can now log in.";
-          signupBtn.textContent = "Create Account";
-          signupBtn.disabled = false;
-          showLogin();
-        } catch (error) {
-          console.error(error);
-          authMessage.textContent =
-            "Something went wrong creating the account.";
-          signupBtn.textContent = "Create Account";
-          signupBtn.disabled = false;
+        if (selectedRole === "Student") {
+          firstName = document.getElementById("signupFirstName").value.trim();
+          const lastName = document
+            .getElementById("signupLastName")
+            .value.trim();
+          const department = document.getElementById("signupDepartment").value;
+
+          if (!firstName || !lastName || !department) {
+            authMessage.textContent =
+              "Please fill out all student signup fields.";
+            signupBtn.disabled = false;
+            signupBtn.textContent = "Create Account";
+            return;
+          }
+
+          const workstudy = await createActiveWorkstudy({
+            firstName,
+            lastName,
+            department,
+            email,
+          });
+
+          linkedWorkstudyId = workstudy.id;
+        }
+
+        const newUser = await createUser({
+          email,
+          displayName,
+          password,
+          firstName,
+          roleName: selectedRole,
+          linkedWorkstudyId,
+        });
+
+        localStorage.setItem("cpoUserId", newUser.id);
+        localStorage.setItem("cpoUserEmail", newUser.fields.email);
+        localStorage.setItem(
+          "cpoDisplayName",
+          newUser.fields.display_name || "",
+        );
+
+        if (selectedRole === "Student") {
+          window.location.href = "student-portal.html";
+        } else {
+          window.location.href = "index.html";
         }
       });
 
@@ -243,10 +410,8 @@
             roleName = await fetchRoleName(user.fields.role[0]);
           }
 
-          if (roleName === "Student") {
+          if (selectedRole === "Student") {
             window.location.href = "student-portal.html";
-          } else if (roleName === "Group") {
-            window.location.href = "public-portal.html";
           } else {
             window.location.href = "index.html";
           }

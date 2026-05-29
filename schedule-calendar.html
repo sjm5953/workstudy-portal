@@ -329,6 +329,25 @@
       let allScheduleRecords = [];
       let activeWorkstudyMapGlobal = {};
 
+      let activeUserDepartment = null;
+
+      function normalizeDepartment(value) {
+        if (!value) return [];
+
+        if (Array.isArray(value)) {
+          return value.map((item) => String(item).trim().toLowerCase());
+        }
+
+        return [String(value).trim().toLowerCase()];
+      }
+
+      function sameDepartment(recordDepartment) {
+        const userDepartments = normalizeDepartment(activeUserDepartment);
+        const recordDepartments = normalizeDepartment(recordDepartment);
+
+        return recordDepartments.some((dept) => userDepartments.includes(dept));
+      }
+
       function getLocalDateInputValue(date) {
         const localDate = new Date(date);
         localDate.setMinutes(
@@ -809,11 +828,13 @@
 
         const data = await response.json();
 
-        activeWorkstudyRecords = data.records;
+        activeWorkstudyRecords = data.records.filter((record) =>
+          sameDepartment(record.fields.Department),
+        );
 
         const map = {};
 
-        data.records.forEach((record) => {
+        activeWorkstudyRecords.forEach((record) => {
           map[record.id] = record.fields.Name || "Unnamed";
         });
 
@@ -1297,6 +1318,9 @@ ${draftRow}
         }
 
         const data = await response.json();
+
+        activeUserDepartment = data.fields.Department || null;
+
         return data.fields;
       }
 
@@ -1358,10 +1382,16 @@ ${draftRow}
         allScheduleRecords = allRecords;
         activeWorkstudyMapGlobal = workstudyMap;
 
+        const filteredRecords = allRecords.filter((record) => {
+          const workstudyId = record.fields.workstudy_name?.[0];
+
+          return !!workstudyMap[workstudyId];
+        });
+
         if (calendarView === "day") {
           const dayString = formatDateForAirtable(viewedDate);
 
-          const shiftsForDay = allRecords
+          const shiftsForDay = filteredRecords
             .filter((record) => {
               const fields = record.fields;
               if (!fields.shift_start || !fields.shift_end) return false;
@@ -1386,7 +1416,7 @@ ${draftRow}
         const weekEnd = new Date(weekDays[5]);
         weekEnd.setHours(23, 59, 59, 999);
 
-        const shiftsForWeek = allRecords
+        const shiftsForWeek = filteredRecords
           .filter((record) => {
             const fields = record.fields;
             if (!fields.shift_start || !fields.shift_end) return false;
@@ -1447,19 +1477,20 @@ ${draftRow}
         setActiveNav();
       });
 
-      loadComponent("header", "components/header.html", () => {
-        loadUserHeader();
-      });
+      loadComponent("header", "components/header.html", async () => {
+        await loadUserHeader();
 
-      loadScheduleView().catch((error) => {
-        console.error(error);
-        calendarEl.innerHTML = `
+        loadScheduleView().catch((error) => {
+          console.error(error);
+
+          calendarEl.innerHTML = `
       <div class="p-8">
         <p class="uppercase text-sm font-bold text-error">
           Something went wrong loading the schedule.
         </p>
       </div>
     `;
+        });
       });
 
       document.getElementById("logoutBtn").addEventListener("click", () => {

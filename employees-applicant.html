@@ -181,6 +181,25 @@
 
       let allApplicantRecords = [];
 
+      let activeUserDepartment = null;
+
+      function normalizeDepartment(value) {
+        if (!value) return [];
+
+        if (Array.isArray(value)) {
+          return value.map((item) => String(item).trim().toLowerCase());
+        }
+
+        return [String(value).trim().toLowerCase()];
+      }
+
+      function sameDepartment(recordDepartment) {
+        const userDepartments = normalizeDepartment(activeUserDepartment);
+        const recordDepartments = normalizeDepartment(recordDepartment);
+
+        return recordDepartments.some((dept) => userDepartments.includes(dept));
+      }
+
       function applyApplicantFilter() {
         const filterValue = activeApplicantFilter;
 
@@ -324,12 +343,14 @@
 
           const data = await response.json();
 
-          allApplicantRecords = data.records.sort((a, b) => {
-            const aName = (a.fields.Name || "").toLowerCase();
-            const bName = (b.fields.Name || "").toLowerCase();
+          allApplicantRecords = data.records
+            .filter((record) => sameDepartment(record.fields.Department))
+            .sort((a, b) => {
+              const aName = (a.fields.Name || "").toLowerCase();
+              const bName = (b.fields.Name || "").toLowerCase();
 
-            return aName.localeCompare(bName);
-          });
+              return aName.localeCompare(bName);
+            });
 
           applyApplicantFilter();
         } catch (error) {
@@ -598,6 +619,8 @@ ${drawerSection(
         const data = await response.json();
         const userFields = data.fields;
 
+        activeUserDepartment = userFields.Department || null;
+
         // OPTIONAL STUDENT REDIRECT
         if (userFields.role === "Student") {
           window.location.href = "student-portal.html";
@@ -750,15 +773,6 @@ ${drawerSection(
         closeApplicantSideDrawer,
       );
 
-      // LOAD COMPONENTS
-      loadComponent("sidebar", "components/sidebar.html", () => {
-        setActiveNav();
-      });
-
-      loadComponent("header", "components/header.html", () => {
-        loadUserHeader();
-      });
-
       // LOGOUT
       const logoutBtn = document.getElementById("logoutBtn");
 
@@ -770,7 +784,15 @@ ${drawerSection(
         });
       }
 
-      loadApplicants();
+      // LOAD COMPONENTS
+      loadComponent("sidebar", "components/sidebar.html", () => {
+        setActiveNav();
+      });
+
+      loadComponent("header", "components/header.html", async () => {
+        await loadUserHeader();
+        await loadApplicants();
+      });
     </script>
   </body>
 </html>

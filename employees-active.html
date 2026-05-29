@@ -153,6 +153,25 @@
       let allEmployeeRecords = [];
       let currentScheduleRecords = [];
 
+      let activeUserDepartment = null;
+
+      function normalizeDepartment(value) {
+        if (!value) return [];
+
+        if (Array.isArray(value)) {
+          return value.map((item) => String(item).trim().toLowerCase());
+        }
+
+        return [String(value).trim().toLowerCase()];
+      }
+
+      function sameDepartment(recordDepartment) {
+        const userDepartments = normalizeDepartment(activeUserDepartment);
+        const recordDepartments = normalizeDepartment(recordDepartment);
+
+        return recordDepartments.some((dept) => userDepartments.includes(dept));
+      }
+
       function getStatusClass(status) {
         if (status === "Active") {
           return "bg-primary text-base-100";
@@ -234,12 +253,14 @@ ${fields["Student Email"] || "—"}
 
           const data = await response.json();
 
-          allEmployeeRecords = data.records.sort((a, b) => {
-            const aName = (a.fields.Name || "").toLowerCase();
-            const bName = (b.fields.Name || "").toLowerCase();
+          allEmployeeRecords = data.records
+            .filter((record) => sameDepartment(record.fields.Department))
+            .sort((a, b) => {
+              const aName = (a.fields.Name || "").toLowerCase();
+              const bName = (b.fields.Name || "").toLowerCase();
 
-            return aName.localeCompare(bName);
-          });
+              return aName.localeCompare(bName);
+            });
 
           renderEmployees(allEmployeeRecords);
         } catch (error) {
@@ -514,6 +535,8 @@ ${drawerSection(
         const data = await response.json();
         const userFields = data.fields;
 
+        activeUserDepartment = userFields.Department || null;
+
         // OPTIONAL STUDENT REDIRECT
         if (userFields.role === "Student") {
           window.location.href = "student-portal.html";
@@ -569,15 +592,6 @@ ${drawerSection(
         }
       }
 
-      // LOAD COMPONENTS
-      loadComponent("sidebar", "components/sidebar.html", () => {
-        setActiveNav();
-      });
-
-      loadComponent("header", "components/header.html", () => {
-        loadUserHeader();
-      });
-
       closeEmployeeDrawer.addEventListener("click", closeEmployeeSideDrawer);
       employeeDrawerOverlay.addEventListener("click", closeEmployeeSideDrawer);
 
@@ -608,7 +622,15 @@ ${drawerSection(
         });
       }
 
-      loadEmployees();
+      // LOAD COMPONENTS
+      loadComponent("sidebar", "components/sidebar.html", () => {
+        setActiveNav();
+      });
+
+      loadComponent("header", "components/header.html", async () => {
+        await loadUserHeader();
+        await loadEmployees();
+      });
     </script>
   </body>
 </html>
