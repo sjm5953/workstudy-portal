@@ -63,15 +63,24 @@
 
           <!-- PAGE CONTENT -->
           <div class="mt-4 flex-1 min-h-0 flex flex-col">
-            <div class="mb-4 flex justify-end">
-              <select
-                id="applicantStatusFilter"
-                class="select select-bordered w-full max-w-xs rounded-lg"
-              >
-                <option value="all" selected>All</option>
-                <option value="active">Active</option>
-                <option value="completed">Completed</option>
-              </select>
+            <div class="mb-4 flex justify-start">
+              <div role="tablist" class="tabs tabs-border text-primary">
+                <button
+                  class="tab applicant-filter-tab tab-active"
+                  data-filter="active"
+                >
+                  Active
+                </button>
+                <button
+                  class="tab applicant-filter-tab"
+                  data-filter="completed"
+                >
+                  Completed
+                </button>
+                <button class="tab applicant-filter-tab" data-filter="all">
+                  All
+                </button>
+              </div>
             </div>
             <div
               class="bg-base-100 rounded-lg shadow-md overflow-hidden h-full flex flex-col"
@@ -165,14 +174,15 @@
         "applicantDrawerContent",
       );
 
-      const applicantStatusFilter = document.getElementById(
-        "applicantStatusFilter",
+      const applicantFilterTabs = document.querySelectorAll(
+        ".applicant-filter-tab",
       );
+      let activeApplicantFilter = "active";
 
       let allApplicantRecords = [];
 
       function applyApplicantFilter() {
-        const filterValue = applicantStatusFilter.value;
+        const filterValue = activeApplicantFilter;
 
         let filtered = [...allApplicantRecords];
 
@@ -343,17 +353,29 @@
         applicantDrawerContent.innerHTML = `
     ${renderNextStepSection(record)}
 
-    ${drawerSection(
-      "Interviews",
-      detailRow("First Interview", formatDate(f["First Interview"])) +
-        detailRow("Second Interview", formatDate(f["Second Interview"])),
-    )}
+${drawerSection(
+  "Contact",
+  detailRow("Student Email", f["Student Email"], true) +
+    detailRow("Personal Email", f["Personal Email"], true),
+)}
 
-    ${drawerSection(
-      "Contact",
-      detailRow("Student Email", f["Student Email"], true) +
-        detailRow("Personal Email", f["Personal Email"], true),
-    )}
+${drawerSection(
+  "Notes",
+  `
+    <textarea
+      id="applicantNotesInput"
+      class="textarea textarea-bordered w-full min-h-32"
+      placeholder="Add notes..."
+    >${f.Notes || ""}</textarea>
+
+    <button
+      class="btn btn-sm bg-neutral text-base-100 mt-3 save-notes-btn"
+      data-record-id="${record.id}"
+    >
+      Save Notes
+    </button>
+  `,
+)}
   `;
       }
 
@@ -430,7 +452,9 @@
     `;
         } else if (status === "First Interview - Completed") {
           content = `
-      <p class="text-sm font-bold mb-3">Send the second interview invite</p>
+    <p class="text-sm font-bold mb-3">Send the second interview invite</p>
+
+    <div class="flex gap-2 flex-wrap">
       <button
         class="btn btn-sm bg-neutral text-base-100 next-step-btn"
         data-record-id="${record.id}"
@@ -438,7 +462,16 @@
       >
         Sent
       </button>
-    `;
+
+      <button
+        class="btn btn-sm bg-red-400 text-base-100 next-step-btn"
+        data-record-id="${record.id}"
+        data-next-status="Not Moving Forward"
+      >
+        Not Moving Forward
+      </button>
+    </div>
+  `;
         } else if (status === "Second Interview - Initiated") {
           content = `
       <p class="text-sm font-bold mb-3">When is the second interview?</p>
@@ -620,7 +653,19 @@
         }
       }
 
-      applicantStatusFilter.addEventListener("change", applyApplicantFilter);
+      applicantFilterTabs.forEach((tab) => {
+        tab.addEventListener("click", () => {
+          activeApplicantFilter = tab.dataset.filter;
+
+          applicantFilterTabs.forEach((item) => {
+            item.classList.remove("tab-active");
+          });
+
+          tab.classList.add("tab-active");
+
+          applyApplicantFilter();
+        });
+      });
 
       document.addEventListener("click", async (event) => {
         const nextStepBtn = event.target.closest(".next-step-btn");
@@ -672,6 +717,30 @@
         } catch (error) {
           console.error(error);
           alert("Something went wrong scheduling the interview.");
+        }
+      });
+
+      document.addEventListener("click", async (event) => {
+        const saveNotesBtn = event.target.closest(".save-notes-btn");
+        if (!saveNotesBtn) return;
+
+        const notesInput = document.getElementById("applicantNotesInput");
+
+        saveNotesBtn.disabled = true;
+        saveNotesBtn.textContent = "Saving...";
+
+        try {
+          const updatedRecord = await updateApplicantRecord(
+            saveNotesBtn.dataset.recordId,
+            {
+              Notes: notesInput.value,
+            },
+          );
+
+          updateApplicantRecordInMemory(updatedRecord);
+        } catch (error) {
+          console.error(error);
+          alert("Something went wrong saving the notes.");
         }
       });
 
