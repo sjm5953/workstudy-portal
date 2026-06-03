@@ -706,12 +706,15 @@
 
         const userFields = data.fields;
 
+        console.log("User role:", userFields.role);
+        console.log("Full user record:", userFields);
+
         activeUserDepartment = userFields.Department || null;
 
         console.log("Active user department:", activeUserDepartment);
 
         // redirect students
-        if (userFields.role === "Student") {
+        if (userFields.role_name?.[0] === "Student") {
           window.location.href = "student-portal.html";
           return;
         }
