@@ -933,20 +933,17 @@ ${formatCoverageDate(fields.Date)}
 
       async function fetchNeedConfirmationShifts() {
         const allShifts = await fetchAllUserShifts();
-        const { monday, sunday } = getCurrentMondaySundayRange();
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
         return allShifts.filter((record) => {
-          const status = record.fields.shift_status || "Unconfirmed";
+          const status = (record.fields.shift_status || "Unconfirmed").trim();
           const shiftStart = new Date(record.fields.shift_start);
 
-          return (
-            status === "Unconfirmed" &&
-            shiftStart >= monday &&
-            shiftStart <= sunday
-          );
+          return status.toLowerCase() === "unconfirmed" && shiftStart >= today;
         });
       }
-
       function renderNeedConfirmationShifts(records) {
         if (records.length === 0) {
           needConfirmationList.innerHTML = `
