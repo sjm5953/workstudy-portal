@@ -309,6 +309,25 @@
 
       const TODO_TABLE = "To Do";
 
+      async function fetchActiveWorkstudy(workstudyId) {
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          "Active Workstudies",
+        )}/${workstudyId}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch active workstudy.");
+        }
+
+        const data = await response.json();
+        return data.fields;
+      }
+
       async function fetchAllAirtableRecords(tableName, params = {}) {
         let allRecords = [];
         let offset = null;
@@ -419,7 +438,22 @@
 
       function getShiftTypeName(value) {
         if (!value) return "";
+
+        // Airtable linked record / multi-select array
+        if (Array.isArray(value)) {
+          const firstValue = value[0];
+
+          if (!firstValue) return "";
+
+          if (typeof firstValue === "string") return firstValue;
+
+          return firstValue.name || "";
+        }
+
+        // Plain text
         if (typeof value === "string") return value;
+
+        // Single select object
         return value.name || "";
       }
 
@@ -434,6 +468,14 @@
 
         if (shiftType === "Evening") {
           return { start: "14:00", end: "18:00", label: "2:00 PM - 6:00 PM" };
+        }
+
+        if (shiftType === "All Day") {
+          return {
+            start: null,
+            end: null,
+            label: "All Day",
+          };
         }
 
         return null;
@@ -465,32 +507,62 @@
       }
 
       async function fetchOpenCoverageShifts() {
-        const formula = `{Count}=0`;
+        const user = await fetchUser();
+        const linkedWorkstudies = user.linked_workstudy || [];
 
-        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
-          DAILY_SHIFT_COVERAGE_TABLE,
-        )}?filterByFormula=${encodeURIComponent(formula)}`;
-
-        const response = await fetch(url, {
-          headers: {
-            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch open coverage shifts.");
+        if (
+          !Array.isArray(linkedWorkstudies) ||
+          linkedWorkstudies.length === 0
+        ) {
+          console.warn("No linked Active Workstudy found for user:", user);
+          return [];
         }
 
-        const data = await response.json();
+        const activeWorkstudy = await fetchActiveWorkstudy(
+          linkedWorkstudies[0],
+        );
+
+        console.log("Active Workstudy:", activeWorkstudy);
+        console.log("Active Workstudy Department:", activeWorkstudy.Department);
+
+        const userDepartment = activeWorkstudy.Department;
+
+        if (!userDepartment) {
+          console.warn("No department found on Active Workstudy.");
+          return [];
+        }
+
+        const formula = `AND(
+    {Count}=0,
+    {Department}="${userDepartment}"
+  )`;
+
+        console.log("Coverage Formula:", formula);
+
+        const records = await fetchAllAirtableRecords(
+          DAILY_SHIFT_COVERAGE_TABLE,
+          {
+            filterByFormula: formula,
+          },
+        );
+
+        console.log(
+          "Coverage Records Returned:",
+          records.map((r) => ({
+            id: r.id,
+            department: r.fields.Department,
+            date: r.fields.Date,
+            shiftType: r.fields["Shift Type"],
+            count: r.fields.Count,
+          })),
+        );
 
         const today = new Date();
         today.setHours(23, 59, 59, 999);
 
-        return data.records
+        return records
           .filter((record) => {
             const dateOnly = dateOnlyForInput(record.fields.Date);
-
-            // use noon to avoid timezone shifting
             const shiftDate = new Date(`${dateOnly}T12:00:00`);
 
             return shiftDate > today;
@@ -499,7 +571,6 @@
             const dateA = new Date(
               `${dateOnlyForInput(a.fields.Date)}T12:00:00`,
             );
-
             const dateB = new Date(
               `${dateOnlyForInput(b.fields.Date)}T12:00:00`,
             );
@@ -523,6 +594,12 @@
             const fields = record.fields;
             const shiftType = getShiftTypeName(fields["Shift Type"]);
             const times = getCoverageTimes(shiftType);
+
+            console.log("Rendering coverage shift:", {
+              rawShiftType: fields["Shift Type"],
+              shiftType,
+              times,
+            });
 
             if (!times) return "";
 
