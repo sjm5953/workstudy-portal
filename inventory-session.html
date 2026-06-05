@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="en" data-theme="green">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <!--font-->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap"
+      rel="stylesheet"
+    />
+    <!--tailwind-->
+    <link href="src/output.css" rel="stylesheet" />
+    <!--icons-->
+    <link
+      rel="stylesheet"
+      href="https://cdn-uicons.flaticon.com/4.0.0/uicons-regular-rounded/css/uicons-regular-rounded.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn-uicons.flaticon.com/4.0.0/uicons-bold-rounded/css/uicons-bold-rounded.css"
+    />
+    <!--chart-->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body class="h-screen overflow-hidden">
+    <!--main container-->
+    <div class="h-screen bg-neutral-100 flex overflow-hidden">
+      <!--sidebar-->
+      <div id="sidebar"></div>
+      <!--right-->
+      <div class="flex-1 flex flex-col overflow-hidden">
+        <!--header-->
+        <div id="header"></div>
+        <!--content-->
+        <div class="p-8 flex flex-col flex-1 overflow-hidden min-h-0">
+          <div
+            class="bg-base-100 shadow-md rounded-lg px-8 py-4 bg-linear-to-bl from-[#f3f520] to-[#4DB900] text-base-100 flex items-center justify-between"
+          >
+            <h1 class="uppercase font-black text-2xl">New Session</h1>
+          </div>
+          <div class="mt-4 flex items-center justify-between">
+            <div role="tablist" class="tabs tabs-border text-primary">
+              <button
+                class="tab location-tab tab-active"
+                data-location="storage_a_q"
+              >
+                Storage A
+              </button>
+              <button class="tab location-tab" data-location="janitor_q">
+                Janitor Closet
+              </button>
+              <button class="tab location-tab" data-location="student_lounge_q">
+                Student Lounge
+              </button>
+              <button class="tab location-tab" data-location="staff_lounge_q">
+                Staff Lounge
+              </button>
+              <button class="tab location-tab" data-location="mail_room_q">
+                Mail Room
+              </button>
+              <button class="tab location-tab" data-location="kyle_office_q">
+                Kyle's Office
+              </button>
+            </div>
+
+            <button
+              id="submitSessionBtn"
+              class="btn bg-neutral text-base-100 rounded-full"
+            >
+              Submit
+            </button>
+          </div>
+
+          <div
+            class="mt-4 bg-base-100 rounded-lg shadow-md overflow-hidden flex-1 min-h-0"
+          >
+            <div
+              id="sessionItemsList"
+              class="overflow-y-auto h-full p-4 space-y-3"
+            >
+              <p class="uppercase text-xs font-bold opacity-60">
+                Loading session items...
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="src/components.js"></script>
+    <script>
+      const AIRTABLE_TOKEN =
+        "path5D1SLsZnikHyD.8e47f28d9b3b2913d1ebf07e9b1beb8c0903a82bb49266f19cb98fb4021b0129";
+
+      const BASE_ID = "appYqZMGk18beV4qI";
+      const USERS_TABLE = "Users";
+      const INVENTORY_BASE_ID = "apptUAgpH6UuhPwYy";
+      const SESSIONS_TABLE = "sessions";
+      const SESSION_LINE_ITEMS_TABLE = "session_line_items";
+      const INVENTORY_TABLE = "Inventory";
+
+      const userId = localStorage.getItem("cpoUserId");
+      const sessionItemsList = document.getElementById("sessionItemsList");
+      const submitSessionBtn = document.getElementById("submitSessionBtn");
+      const locationTabs = document.querySelectorAll(".location-tab");
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const sessionRecordId =
+        urlParams.get("sessionId") ||
+        urlParams.get("recordId") ||
+        urlParams.get("id");
+
+      let activeLocationField = "storage_a_q";
+      let inventoryRecords = [];
+      let activeSessionIdValue = null;
+
+      const quantityFields = [
+        "storage_a_q",
+        "janitor_q",
+        "student_lounge_q",
+        "staff_lounge_q",
+        "mail_room_q",
+        "kyle_office_q",
+      ];
+
+      const sessionCountValues = {};
+
+      function setActiveNav() {
+        const currentPage = window.location.pathname.split("/").pop();
+        const links = document.querySelectorAll("[data-page]");
+
+        links.forEach((link) => {
+          if (link.dataset.page === currentPage) {
+            link.classList.add("navSubActive");
+
+            const details = link.closest("details");
+            if (details) details.open = true;
+          }
+        });
+      }
+
+      async function fetchUser() {
+        if (!userId) {
+          window.location.href = "auth.html";
+          return;
+        }
+
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          USERS_TABLE,
+        )}/${userId}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch user");
+        }
+
+        const data = await response.json();
+        const userFields = data.fields;
+
+        if (userFields.role === "Student") {
+          window.location.href = "student-portal.html";
+          return;
+        }
+
+        return userFields;
+      }
+
+      async function loadRoleName(roleRecordId) {
+        const roleEl = document.getElementById("userRole");
+        if (!roleEl) return;
+
+        const url = `https://api.airtable.com/v0/${BASE_ID}/Roles/${roleRecordId}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          roleEl.textContent = "Role";
+          return;
+        }
+
+        const data = await response.json();
+        roleEl.textContent = data.fields.name || "Role";
+      }
+
+      async function loadUserHeader() {
+        const avatarEl = document.getElementById("userAvatar");
+        const nameEl = document.getElementById("userName");
+        const roleEl = document.getElementById("userRole");
+        const displayNameSpan = document.getElementById("display_name");
+
+        try {
+          const user = await fetchUser();
+          if (!user) return;
+
+          if (avatarEl) {
+            avatarEl.src =
+              user.avatar_url ||
+              "https://img.daisyui.com/images/profile/demo/yellingcat@192.webp";
+          }
+
+          if (nameEl) nameEl.textContent = user.display_name || "User";
+          if (displayNameSpan)
+            displayNameSpan.textContent = user.display_name || "User";
+
+          if (roleEl) {
+            if (user.role && user.role.length > 0) {
+              roleEl.textContent = "Loading...";
+              await loadRoleName(user.role[0]);
+            } else {
+              roleEl.textContent = "Standard";
+            }
+          }
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
+      function setupLogout() {
+        const logoutBtn = document.getElementById("logoutBtn");
+        if (!logoutBtn) return;
+
+        logoutBtn.addEventListener("click", () => {
+          localStorage.removeItem("cpoUserId");
+          localStorage.removeItem("cpoUserEmail");
+          localStorage.removeItem("cpoDisplayName");
+        });
+      }
+
+      async function airtableRequest({
+        tableName,
+        recordId = "",
+        method = "GET",
+        body = null,
+      }) {
+        const url = `https://api.airtable.com/v0/${INVENTORY_BASE_ID}/${encodeURIComponent(
+          tableName,
+        )}${recordId ? `/${recordId}` : ""}`;
+
+        const response = await fetch(url, {
+          method,
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: body ? JSON.stringify(body) : null,
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(errorText);
+          throw new Error(`Airtable request failed for ${tableName}`);
+        }
+
+        return response.json();
+      }
+
+      async function fetchAllInventoryBaseRecords(tableName, params = "") {
+        let allRecords = [];
+        let offset = null;
+
+        do {
+          const url = new URL(
+            `https://api.airtable.com/v0/${INVENTORY_BASE_ID}/${encodeURIComponent(
+              tableName,
+            )}`,
+          );
+
+          if (params) {
+            const searchParams = new URLSearchParams(params);
+            searchParams.forEach((value, key) => {
+              url.searchParams.set(key, value);
+            });
+          }
+
+          if (offset) url.searchParams.set("offset", offset);
+
+          const response = await fetch(url, {
+            headers: {
+              Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+            },
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(errorText);
+            throw new Error(`Failed to fetch ${tableName}`);
+          }
+
+          const data = await response.json();
+
+          allRecords = allRecords.concat(data.records);
+          offset = data.offset;
+        } while (offset);
+
+        return allRecords;
+      }
+
+      async function loadInventoryItemsForSession() {
+        if (!sessionRecordId) {
+          sessionItemsList.innerHTML = `
+        <p class="uppercase text-xs font-bold text-error">
+          No session record ID found in the URL.
+        </p>
+      `;
+          return;
+        }
+
+        sessionItemsList.innerHTML = `
+      <p class="uppercase text-xs font-bold opacity-60">
+        Loading inventory items...
+      </p>
+    `;
+
+        try {
+          const sessionRecord = await airtableRequest({
+            tableName: SESSIONS_TABLE,
+            recordId: sessionRecordId,
+          });
+
+          activeSessionIdValue =
+            sessionRecord.fields.session_id || sessionRecord.id;
+
+          inventoryRecords = await fetchAllInventoryBaseRecords(
+            INVENTORY_TABLE,
+            "sort%5B0%5D%5Bfield%5D=item_name&sort%5B0%5D%5Bdirection%5D=asc",
+          );
+
+          inventoryRecords.forEach((record) => {
+            sessionCountValues[record.id] = {
+              storage_a_q: 0,
+              janitor_q: 0,
+              student_lounge_q: 0,
+              staff_lounge_q: 0,
+              mail_room_q: 0,
+              kyle_office_q: 0,
+            };
+          });
+
+          renderSessionItems();
+        } catch (error) {
+          console.error(error);
+
+          sessionItemsList.innerHTML = `
+        <p class="uppercase text-xs font-bold text-error">
+          Something went wrong loading inventory items.
+        </p>
+      `;
+        }
+      }
+
+      function saveCurrentTabValues() {
+        document.querySelectorAll(".session-count-input").forEach((input) => {
+          const inventoryRecordId = input.dataset.inventoryRecordId;
+          sessionCountValues[inventoryRecordId][activeLocationField] =
+            input.value;
+        });
+      }
+
+      function getPreviousCountFromInventory(inventoryFields) {
+        const value = inventoryFields[activeLocationField];
+
+        if (value === undefined || value === null || value === "") {
+          return 0;
+        }
+
+        return value;
+      }
+
+      function renderSessionItems() {
+        if (!inventoryRecords.length) {
+          sessionItemsList.innerHTML = `
+        <p class="uppercase text-xs font-bold opacity-60">
+          No inventory items found.
+        </p>
+      `;
+          return;
+        }
+
+        sessionItemsList.innerHTML = inventoryRecords
+          .map((record) => {
+            const fields = record.fields;
+
+            const itemName = fields.item_name || "Unnamed Item";
+            const previousCount = getPreviousCountFromInventory(fields);
+            const currentSessionValue =
+              sessionCountValues[record.id]?.[activeLocationField] ?? 0;
+
+            return `
+          <div class="bg-neutral-100 rounded-lg p-4 grid grid-cols-[1fr_140px_160px] gap-4 items-center">
+            <div>
+              <h3 class="font-black uppercase text-sm">${itemName}</h3>
+            </div>
+
+            <div class="text-right">
+              <p class="text-xs uppercase opacity-60 font-bold">Previous Count</p>
+              <p class="font-black">${previousCount}</p>
+            </div>
+
+            <div>
+              <label class="label font-bold uppercase text-xs">New Count</label>
+              <input
+                type="number"
+                min="0"
+                class="input input-bordered w-full session-count-input"
+                data-inventory-record-id="${record.id}"
+                value="${currentSessionValue}"
+              />
+            </div>
+          </div>
+        `;
+          })
+          .join("");
+      }
+
+      async function createSessionLineItem(record) {
+        const values = sessionCountValues[record.id] || {};
+
+        const fields = {
+          session_id: [sessionRecordId],
+          item_name: [record.id],
+        };
+
+        quantityFields.forEach((fieldName) => {
+          fields[fieldName] = Number(values[fieldName] || 0);
+        });
+
+        return airtableRequest({
+          tableName: SESSION_LINE_ITEMS_TABLE,
+          method: "POST",
+          body: { fields },
+        });
+      }
+
+      async function submitSessionCounts() {
+        saveCurrentTabValues();
+
+        submitSessionBtn.disabled = true;
+        submitSessionBtn.textContent = "Saving...";
+
+        try {
+          for (const record of inventoryRecords) {
+            await createSessionLineItem(record);
+
+            await new Promise((resolve) => setTimeout(resolve, 225));
+          }
+
+          window.location.href = "inventory-list.html";
+        } catch (error) {
+          console.error(error);
+
+          alert("Something went wrong creating the session counts.");
+
+          submitSessionBtn.disabled = false;
+          submitSessionBtn.textContent = "Submit";
+        }
+      }
+
+      locationTabs.forEach((tab) => {
+        tab.addEventListener("click", () => {
+          saveCurrentTabValues();
+
+          activeLocationField = tab.dataset.location;
+
+          locationTabs.forEach((item) => {
+            item.classList.remove("tab-active");
+          });
+
+          tab.classList.add("tab-active");
+
+          renderSessionItems();
+        });
+      });
+
+      submitSessionBtn.addEventListener("click", submitSessionCounts);
+
+      loadComponent("sidebar", "components/sidebar.html", () => {
+        setActiveNav();
+      });
+
+      loadComponent("header", "components/header.html", async () => {
+        await loadUserHeader();
+        setupLogout();
+      });
+
+      loadInventoryItemsForSession();
+    </script>
+  </body>
+</html>
