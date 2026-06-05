@@ -882,8 +882,16 @@ ${formatCoverageDate(fields.Date)}
 
         const dateOnly = dateOnlyForInput(fields.Date);
 
-        const shiftStart = new Date(`${dateOnly}T${times.start}:00`);
-        const shiftEnd = new Date(`${dateOnly}T${times.end}:00`);
+        let shiftStart;
+        let shiftEnd;
+
+        if (shiftType === "All Day") {
+          shiftStart = new Date(`${dateOnly}T07:30:00`);
+          shiftEnd = new Date(`${dateOnly}T18:00:00`);
+        } else {
+          shiftStart = new Date(`${dateOnly}T${times.start}:00`);
+          shiftEnd = new Date(`${dateOnly}T${times.end}:00`);
+        }
 
         const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
           SCHEDULE_TABLE,
