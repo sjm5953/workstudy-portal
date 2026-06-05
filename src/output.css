@@ -3124,6 +3124,18 @@
     font-size: var(--text-xs);
     line-height: var(--tw-leading, var(--text-xs--line-height));
   }
+  .badge-sm {
+    @layer daisyui.l1.l2 {
+      --size: calc(var(--size-selector, 0.25rem) * 5);
+      font-size: 0.75rem;
+    }
+  }
+  .badge-xs {
+    @layer daisyui.l1.l2 {
+      --size: calc(var(--size-selector, 0.25rem) * 4);
+      font-size: 0.625rem;
+    }
+  }
   .text-\[10px\] {
     font-size: 10px;
   }
@@ -3435,6 +3447,11 @@
   .md\:grid-cols-3 {
     @media (width >= 48rem) {
       grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  .md\:grid-cols-4 {
+    @media (width >= 48rem) {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
   .md\:grid-cols-\[2fr_1fr\] {

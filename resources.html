@@ -39,7 +39,20 @@
           >
             <h1 class="uppercase font-bold text-2xl">Resources</h1>
           </div>
-          <div id="resourcesList" class="mt-6 flex flex-col gap-3"></div>
+
+          <div class="mt-4">
+            <label class="input w-full rounded-lg bg-base-100 shadow-md h-12">
+              <i class="fi fi-br-search opacity-50 pt-1"></i>
+              <input
+                id="resourceSearchInput"
+                type="search"
+                class="grow"
+                placeholder="Search resources..."
+              />
+            </label>
+          </div>
+
+          <div id="resourcesList" class="mt-4 grid md:grid-cols-4 gap-4"></div>
         </div>
       </div>
     </div>
@@ -57,6 +70,11 @@
 
       const CPO_RESOURCES_BASE_ID = "app2WepjTwau6TuDe";
       const RESOURCES_TABLE = "Resources";
+
+      const resourceSearchInput = document.getElementById(
+        "resourceSearchInput",
+      );
+      let allResourceRecords = [];
 
       function setActiveNav() {
         const currentPage = window.location.pathname.split("/").pop();
@@ -214,36 +232,84 @@
           .map((record) => {
             const title = record.fields.title || "Untitled Resource";
             const description = record.fields.description || "";
+            const tags = record.fields.tags || [];
+
+            const tagBadges = tags
+              .map((tag) => {
+                return `
+      <span class="badge badge-xs bg-neutral-100 text-neutral border-neutral-200 uppercase font-bold">
+        ${tag}
+      </span>
+    `;
+              })
+              .join("");
 
             return `
-          <a 
-            href="resource-view.html?id=${record.id}"
-            class="bg-base-100 rounded-lg shadow p-5 hover:shadow-lg hover:-translate-y-0.5 transition block"
-          >
-            <h2 class="font-bold text-lg text-neutral-900">${title}</h2>
-            <p class="text-sm text-neutral-500 mt-1">${description}</p>
-          </a>
-        `;
+  <a 
+    href="resource-view.html?id=${record.id}"
+    class="bg-base-100 rounded-lg shadow p-5 hover:shadow-lg hover:-translate-y-0.5 transition block"
+  >
+    <h2 class="font-bold text-lg text-neutral-900">${title}</h2>
+
+    ${
+      tags.length
+        ? `<div class="flex flex-wrap gap-1 mt-2">${tagBadges}</div>`
+        : ""
+    }
+
+    <p class="text-sm text-neutral-500 mt-3">${description}</p>
+  </a>
+`;
           })
           .join("");
       }
 
       async function loadResources() {
         try {
-          const resources = await fetchResources();
-          renderResources(resources);
+          allResourceRecords = await fetchResources();
+          renderResources(allResourceRecords);
         } catch (err) {
           console.error(err);
 
           document.getElementById("resourcesList").innerHTML = `
-        <div class="bg-base-100 rounded-lg shadow p-6 text-error">
-          Could not load resources.
-        </div>
-      `;
+      <div class="bg-base-100 rounded-lg shadow p-6 text-error">
+        Could not load resources.
+      </div>
+    `;
         }
       }
 
+      function filterResources() {
+        const searchTerm = resourceSearchInput.value.trim().toLowerCase();
+
+        if (!searchTerm) {
+          renderResources(allResourceRecords);
+          return;
+        }
+
+        const filtered = allResourceRecords.filter((record) => {
+          const f = record.fields;
+
+          const title = String(f.title || "").toLowerCase();
+          const description = String(f.description || "").toLowerCase();
+          const content = String(f.content || "").toLowerCase();
+          const tags = Array.isArray(f.tags)
+            ? f.tags.join(" ").toLowerCase()
+            : String(f.tags || "").toLowerCase();
+
+          return (
+            title.includes(searchTerm) ||
+            description.includes(searchTerm) ||
+            content.includes(searchTerm) ||
+            tags.includes(searchTerm)
+          );
+        });
+
+        renderResources(filtered);
+      }
+
       loadResources();
+      resourceSearchInput.addEventListener("input", filterResources);
     </script>
   </body>
 </html>
