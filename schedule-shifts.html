@@ -47,9 +47,10 @@
             <h1 class="uppercase font-black text-2xl">Scheduled Shifts</h1>
             <div class="flex gap-4 items-center">
               <button
+                id="openNewShiftModalBtn"
                 class="btn btn-sm rounded-full bg-base-100 border-0 shadow-none px-6 py-1"
               >
-                + Add Shift
+                + New Shift
               </button>
               <div class="dropdown dropdown-end">
                 <div
@@ -463,6 +464,19 @@
             <option value="No Show">No Show</option>
           </select>
 
+          <label class="label font-bold uppercase text-xs mt-4"
+            >Shift Type</label
+          >
+          <select
+            id="drawerShiftTypeSelect"
+            class="select select-bordered w-full"
+          >
+            <option value="Morning">Morning</option>
+            <option value="Afternoon">Afternoon</option>
+            <option value="Evening">Evening</option>
+            <option value="All Day">All Day</option>
+          </select>
+
           <label class="label font-bold uppercase text-xs mt-4">Notes</label>
           <textarea
             id="drawerShiftNotes"
@@ -479,6 +493,96 @@
         >
           Save Changes
         </button>
+      </div>
+    </div>
+
+    <div
+      id="newShiftModal"
+      class="hidden fixed inset-0 z-[9999] bg-black/40 items-center justify-center p-6"
+    >
+      <div
+        class="bg-base-100 rounded-xl shadow-xl w-full max-w-2xl overflow-hidden"
+      >
+        <div class="p-6 border-b border-neutral-200">
+          <h3 class="font-black text-2xl uppercase">New Shift</h3>
+        </div>
+
+        <div class="p-6 grid grid-cols-2 gap-4">
+          <div class="col-span-2">
+            <label class="label font-bold uppercase text-xs">Name</label>
+            <select
+              id="newShiftWorkstudy"
+              class="select select-bordered w-full"
+            ></select>
+          </div>
+
+          <div>
+            <label class="label font-bold uppercase text-xs">Date</label>
+            <input
+              id="newShiftDate"
+              type="date"
+              class="input input-bordered w-full"
+            />
+          </div>
+
+          <div>
+            <label class="label font-bold uppercase text-xs">Shift Type</label>
+            <select id="newShiftType" class="select select-bordered w-full">
+              <option value="Morning">Morning</option>
+              <option value="Afternoon">Afternoon</option>
+              <option value="Evening">Evening</option>
+              <option value="All Day">All Day</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="label font-bold uppercase text-xs">Start Time</label>
+            <input
+              id="newShiftStartTime"
+              type="time"
+              class="input input-bordered w-full"
+            />
+          </div>
+
+          <div>
+            <label class="label font-bold uppercase text-xs">End Time</label>
+            <input
+              id="newShiftEndTime"
+              type="time"
+              class="input input-bordered w-full"
+            />
+          </div>
+
+          <div class="col-span-2">
+            <label class="label font-bold uppercase text-xs"
+              >Shift Status</label
+            >
+            <select id="newShiftStatus" class="select select-bordered w-full">
+              <option value="Requested">Requested</option>
+              <option value="Unconfirmed" selected>Unconfirmed</option>
+              <option value="Confirmed">Confirmed</option>
+              <option value="Call Out">Call Out</option>
+              <option value="Cancelled">Cancelled</option>
+              <option value="No Show">No Show</option>
+            </select>
+          </div>
+
+          <div class="col-span-2">
+            <label class="label font-bold uppercase text-xs">Notes</label>
+            <textarea
+              id="newShiftNotes"
+              class="textarea textarea-bordered w-full min-h-32"
+              placeholder="Add notes..."
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="p-6 border-t border-neutral-200 flex justify-end gap-3">
+          <button id="closeNewShiftModalBtn" class="btn">Cancel</button>
+          <button id="saveNewShiftBtn" class="btn bg-neutral text-base-100">
+            Create Shift
+          </button>
+        </div>
       </div>
     </div>
 
@@ -524,10 +628,118 @@
         "drawerShiftStatusSelect",
       );
       const drawerShiftNotes = document.getElementById("drawerShiftNotes");
+      const drawerShiftTypeSelect = document.getElementById(
+        "drawerShiftTypeSelect",
+      );
+
+      const openNewShiftModalBtn = document.getElementById(
+        "openNewShiftModalBtn",
+      );
+      const newShiftModal = document.getElementById("newShiftModal");
+      const closeNewShiftModalBtn = document.getElementById(
+        "closeNewShiftModalBtn",
+      );
+      const saveNewShiftBtn = document.getElementById("saveNewShiftBtn");
+
+      const newShiftWorkstudy = document.getElementById("newShiftWorkstudy");
+      const newShiftDate = document.getElementById("newShiftDate");
+      const newShiftStartTime = document.getElementById("newShiftStartTime");
+      const newShiftEndTime = document.getElementById("newShiftEndTime");
+      const newShiftType = document.getElementById("newShiftType");
+      const newShiftStatus = document.getElementById("newShiftStatus");
+      const newShiftNotes = document.getElementById("newShiftNotes");
 
       let activeShiftRecord = null;
 
       let activeUserDepartment = null;
+
+      function populateNewShiftWorkstudyDropdown() {
+        newShiftWorkstudy.innerHTML = Object.entries(activeWorkstudyMap)
+          .sort((a, b) => a[1].localeCompare(b[1]))
+          .map(([id, name]) => {
+            return `<option value="${id}">${name}</option>`;
+          })
+          .join("");
+      }
+
+      function openNewShiftModal() {
+        populateNewShiftWorkstudyDropdown();
+
+        newShiftDate.value = "";
+        newShiftStartTime.value = "";
+        newShiftEndTime.value = "";
+        newShiftType.value = "Morning";
+        newShiftStatus.value = "Unconfirmed";
+        newShiftNotes.value = "";
+
+        newShiftModal.classList.remove("hidden");
+        newShiftModal.classList.add("flex");
+      }
+
+      function closeNewShiftModal() {
+        newShiftModal.classList.add("hidden");
+        newShiftModal.classList.remove("flex");
+      }
+
+      async function createNewShiftRecord() {
+        if (
+          !newShiftWorkstudy.value ||
+          !newShiftDate.value ||
+          !newShiftStartTime.value ||
+          !newShiftEndTime.value
+        ) {
+          alert("Please complete name, date, start time, and end time.");
+          return;
+        }
+
+        saveNewShiftBtn.disabled = true;
+        saveNewShiftBtn.textContent = "Creating...";
+
+        try {
+          const shiftStart = `${newShiftDate.value}T${newShiftStartTime.value}:00`;
+          const shiftEnd = `${newShiftDate.value}T${newShiftEndTime.value}:00`;
+
+          const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+            SCHEDULE_TABLE,
+          )}`;
+
+          const response = await fetch(url, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              fields: {
+                workstudy_name: [newShiftWorkstudy.value],
+                shift_start: shiftStart,
+                shift_end: shiftEnd,
+                shift_type: [newShiftType.value],
+                shift_status: newShiftStatus.value,
+                notes: newShiftNotes.value,
+              },
+            }),
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(errorText);
+            throw new Error("Failed to create shift");
+          }
+
+          const newRecord = await response.json();
+
+          allShiftRecords.push(newRecord);
+          applyShiftFiltersAndSort();
+          closeNewShiftModal();
+        } catch (error) {
+          console.error(error);
+          alert("Something went wrong creating the shift.");
+        }
+
+        saveNewShiftBtn.disabled = false;
+        saveNewShiftBtn.textContent = "Create Shift";
+      }
 
       function getStatusBubble(status) {
         const normalized = status || "unconfirmed";
@@ -567,6 +779,7 @@
         drawerShiftEnd.textContent = formatTime(fields.shift_end);
 
         drawerShiftStatusSelect.value = status;
+        drawerShiftTypeSelect.value = fields.shift_type || "";
         drawerShiftNotes.value = fields.notes || "";
 
         shiftDetailOverlay.classList.remove("hidden");
@@ -599,6 +812,7 @@
             body: JSON.stringify({
               fields: {
                 shift_status: drawerShiftStatusSelect.value,
+                shift_type: [drawerShiftTypeSelect.value],
                 notes: drawerShiftNotes.value,
               },
             }),
@@ -1425,6 +1639,10 @@
       closeShiftDetailDrawer.addEventListener("click", closeShiftDrawer);
       shiftDetailOverlay.addEventListener("click", closeShiftDrawer);
       saveShiftDetailBtn.addEventListener("click", updateShiftRecord);
+
+      openNewShiftModalBtn.addEventListener("click", openNewShiftModal);
+      closeNewShiftModalBtn.addEventListener("click", closeNewShiftModal);
+      saveNewShiftBtn.addEventListener("click", createNewShiftRecord);
 
       shiftSearchInput.addEventListener("input", applyShiftFiltersAndSort);
 

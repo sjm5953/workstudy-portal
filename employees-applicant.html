@@ -54,6 +54,7 @@
             <!-- OPTIONAL ACTIONS -->
             <div class="flex items-center gap-3">
               <button
+                id="openAddApplicantModalBtn"
                 class="btn btn-sm rounded-full bg-base-100 text-neutral border-0 shadow-none"
               >
                 + Add
@@ -141,6 +142,89 @@
       ></div>
     </div>
 
+    <div
+      id="addApplicantModal"
+      class="hidden fixed inset-0 z-[9999] bg-black/40 items-center justify-center p-6"
+    >
+      <div
+        class="bg-base-100 rounded-xl shadow-xl w-full max-w-2xl overflow-hidden"
+      >
+        <div class="p-6 border-b border-neutral-200">
+          <h3 class="font-black text-2xl uppercase">Add Applicant</h3>
+        </div>
+
+        <div class="p-6 grid grid-cols-2 gap-4">
+          <div class="col-span-2">
+            <label class="label font-bold uppercase text-xs">Name</label>
+            <input id="newApplicantName" class="input input-bordered w-full" />
+          </div>
+
+          <div>
+            <label class="label font-bold uppercase text-xs">Status</label>
+            <select
+              id="newApplicantStatus"
+              class="select select-bordered w-full"
+            >
+              <option value="Application Received" selected>
+                Application Received
+              </option>
+
+              <option value="First Interview - Initiated">
+                First Interview - Initiated
+              </option>
+
+              <option value="First Interview - Scheduled">
+                First Interview - Scheduled
+              </option>
+
+              <option value="First Interview - Completed">
+                First Interview - Completed
+              </option>
+
+              <option value="Second Interview - Initiated">
+                Second Interview - Initiated
+              </option>
+
+              <option value="Second Interview - Scheduled">
+                Second Interview - Scheduled
+              </option>
+
+              <option value="Hired">Hired</option>
+
+              <option value="Not Moving Forward">Not Moving Forward</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="label font-bold uppercase text-xs">Department</label>
+            <select
+              id="newApplicantDepartment"
+              class="select select-bordered w-full"
+            >
+              <option value="Front Desk">Front Desk</option>
+              <option value="Lab">Lab</option>
+            </select>
+          </div>
+
+          <div class="col-span-2">
+            <label class="label font-bold uppercase text-xs">App Date</label>
+            <input
+              id="newApplicantAppDate"
+              type="date"
+              class="input input-bordered w-full"
+            />
+          </div>
+        </div>
+
+        <div class="p-6 border-t border-neutral-200 flex justify-end gap-3">
+          <button id="closeAddApplicantModalBtn" class="btn">Cancel</button>
+          <button id="saveAddApplicantBtn" class="btn bg-neutral text-base-100">
+            Create Applicant
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- COMPONENTS -->
     <script src="src/components.js"></script>
 
@@ -177,11 +261,104 @@
       const applicantFilterTabs = document.querySelectorAll(
         ".applicant-filter-tab",
       );
+
+      const openAddApplicantModalBtn = document.getElementById(
+        "openAddApplicantModalBtn",
+      );
+      const addApplicantModal = document.getElementById("addApplicantModal");
+      const closeAddApplicantModalBtn = document.getElementById(
+        "closeAddApplicantModalBtn",
+      );
+      const saveAddApplicantBtn = document.getElementById(
+        "saveAddApplicantBtn",
+      );
+
+      const newApplicantName = document.getElementById("newApplicantName");
+      const newApplicantStatus = document.getElementById("newApplicantStatus");
+      const newApplicantDepartment = document.getElementById(
+        "newApplicantDepartment",
+      );
+      const newApplicantAppDate = document.getElementById(
+        "newApplicantAppDate",
+      );
+
       let activeApplicantFilter = "active";
 
       let allApplicantRecords = [];
 
       let activeUserDepartment = null;
+
+      function openAddApplicantModal() {
+        newApplicantName.value = "";
+        newApplicantStatus.value = "Application Received";
+        newApplicantDepartment.value = Array.isArray(activeUserDepartment)
+          ? activeUserDepartment[0] || "Front Desk"
+          : activeUserDepartment || "Front Desk";
+        newApplicantAppDate.value = new Date().toISOString().split("T")[0];
+
+        addApplicantModal.classList.remove("hidden");
+        addApplicantModal.classList.add("flex");
+      }
+
+      function closeAddApplicantModal() {
+        addApplicantModal.classList.add("hidden");
+        addApplicantModal.classList.remove("flex");
+      }
+
+      async function createApplicantRecord() {
+        if (
+          !newApplicantName.value ||
+          !newApplicantStatus.value ||
+          !newApplicantDepartment.value ||
+          !newApplicantAppDate.value
+        ) {
+          alert("Please complete all fields.");
+          return;
+        }
+
+        saveAddApplicantBtn.disabled = true;
+        saveAddApplicantBtn.textContent = "Creating...";
+
+        try {
+          const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+            APPLICANTS_TABLE,
+          )}`;
+
+          const response = await fetch(url, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              fields: {
+                Name: newApplicantName.value,
+                Status: newApplicantStatus.value,
+                Department: newApplicantDepartment.value,
+                "App Date": newApplicantAppDate.value,
+              },
+            }),
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(errorText);
+            throw new Error("Failed to create applicant.");
+          }
+
+          const newRecord = await response.json();
+
+          allApplicantRecords.push(newRecord);
+          applyApplicantFilter();
+          closeAddApplicantModal();
+        } catch (error) {
+          console.error(error);
+          alert("Something went wrong creating the applicant.");
+        }
+
+        saveAddApplicantBtn.disabled = false;
+        saveAddApplicantBtn.textContent = "Create Applicant";
+      }
 
       function normalizeDepartment(value) {
         if (!value) return [];
@@ -375,10 +552,16 @@
     ${renderNextStepSection(record)}
 
 ${drawerSection(
-  "Contact",
-  detailRow("Student Email", f["Student Email"], true) +
-    detailRow("Personal Email", f["Personal Email"], true),
+  "Interview Dates",
+  detailRow("First Interview", formatDate(f["First Interview"])) +
+    detailRow("Second Interview", formatDate(f["Second Interview"])),
 )}
+
+    ${drawerSection(
+      "Contact",
+      detailRow("Student Email", f["Student Email"], true) +
+        detailRow("Personal Email", f["Personal Email"], true),
+    )}
 
 ${drawerSection(
   "Notes",
@@ -772,6 +955,13 @@ ${drawerSection(
         "click",
         closeApplicantSideDrawer,
       );
+
+      openAddApplicantModalBtn.addEventListener("click", openAddApplicantModal);
+      closeAddApplicantModalBtn.addEventListener(
+        "click",
+        closeAddApplicantModal,
+      );
+      saveAddApplicantBtn.addEventListener("click", createApplicantRecord);
 
       // LOGOUT
       const logoutBtn = document.getElementById("logoutBtn");
