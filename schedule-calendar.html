@@ -99,9 +99,21 @@
     </div>
     <dialog id="newShiftModal" class="modal">
       <div class="modal-box">
-        <h3 class="font-black text-2xl uppercase">New Shift</h3>
+        <div class="flex items-center justify-between gap-4">
+          <h3 id="newShiftModalTitle" class="font-black text-2xl uppercase">
+            New Shift
+          </h3>
 
-        <div class="mt-4 flex flex-col gap-4">
+          <button
+            id="toggleOpenShiftBtn"
+            class="btn btn-sm rounded-full bg-primary text-base-100 border-0"
+            type="button"
+          >
+            + Open Shift
+          </button>
+        </div>
+
+        <div id="newShiftForm" class="mt-4 flex flex-col gap-4">
           <div>
             <label class="label font-bold uppercase text-xs">Workstudy</label>
             <select
@@ -144,6 +156,50 @@
               id="newShiftNotes"
               class="textarea textarea-bordered w-full"
             ></textarea>
+          </div>
+        </div>
+
+        <div id="openShiftForm" class="hidden mt-4 flex flex-col gap-4">
+          <div>
+            <label class="label font-bold uppercase text-xs">Date</label>
+            <input id="openShiftDate" type="date" class="input w-full" />
+          </div>
+
+          <div>
+            <label class="label font-bold uppercase text-xs">Shift Type</label>
+            <select id="openShiftType" class="select select-bordered w-full">
+              <option value="">Select Shift Type</option>
+              <option value="Morning">Morning</option>
+              <option value="Afternoon">Afternoon</option>
+              <option value="Evening">Evening</option>
+              <option value="All Day">All Day</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="label font-bold uppercase text-xs"
+                >Start Time</label
+              >
+              <input id="openShiftStartTime" type="time" class="input w-full" />
+            </div>
+
+            <div>
+              <label class="label font-bold uppercase text-xs">End Time</label>
+              <input id="openShiftEndTime" type="time" class="input w-full" />
+            </div>
+          </div>
+
+          <div>
+            <label class="label font-bold uppercase text-xs">Department</label>
+            <select
+              id="openShiftDepartment"
+              class="select select-bordered w-full"
+            >
+              <option value="">Select Department</option>
+              <option value="Front Desk">Front Desk</option>
+              <option value="Lab">Lab</option>
+            </select>
           </div>
         </div>
 
@@ -326,10 +382,31 @@
 
       const calendarDatePicker = document.getElementById("calendarDatePicker");
 
+      const DAILY_SHIFT_COVERAGE_TABLE = "Daily Shift Coverage";
+
+      const newShiftModalTitle = document.getElementById("newShiftModalTitle");
+      const toggleOpenShiftBtn = document.getElementById("toggleOpenShiftBtn");
+      const newShiftForm = document.getElementById("newShiftForm");
+      const openShiftForm = document.getElementById("openShiftForm");
+
+      const openShiftDate = document.getElementById("openShiftDate");
+      const openShiftStartTime = document.getElementById("openShiftStartTime");
+      const openShiftEndTime = document.getElementById("openShiftEndTime");
+      const openShiftType = document.getElementById("openShiftType");
+      const openShiftDepartment = document.getElementById(
+        "openShiftDepartment",
+      );
+
+      let newShiftModalMode = "shift";
+
       let allScheduleRecords = [];
       let activeWorkstudyMapGlobal = {};
 
       let activeUserDepartment = null;
+
+      function dateToTimeInputValue(date) {
+        return date.toTimeString().slice(0, 5);
+      }
 
       function normalizeDepartment(value) {
         if (!value) return [];
@@ -447,6 +524,69 @@
         if (record) {
           openEditShiftDrawer(record);
         }
+      });
+
+      function setNewShiftModalMode(mode) {
+        newShiftModalMode = mode;
+
+        if (mode === "open") {
+          newShiftModalTitle.textContent = "New Open Shift";
+          toggleOpenShiftBtn.textContent = "Regular Shift";
+
+          newShiftForm.classList.add("hidden");
+          openShiftForm.classList.remove("hidden");
+
+          openShiftDate.value = getLocalDateInputValue(viewedDate);
+          openShiftType.value = "";
+          openShiftDepartment.value = activeUserDepartment || "";
+
+          saveNewShiftBtn.textContent = "Save Open Shift";
+          return;
+        }
+
+        newShiftModalTitle.textContent = "New Shift";
+        toggleOpenShiftBtn.textContent = "+ Open Shift";
+
+        openShiftForm.classList.add("hidden");
+        newShiftForm.classList.remove("hidden");
+
+        saveNewShiftBtn.textContent = "Save Shift";
+      }
+
+      async function createOpenShiftRecord() {
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          DAILY_SHIFT_COVERAGE_TABLE,
+        )}`;
+
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            fields: {
+              Date: openShiftDate.value,
+              "Shift Type": openShiftType.value,
+              "Start Time": openShiftStartTime.value,
+              "End Time": openShiftEndTime.value,
+              Department: openShiftDepartment.value,
+              input_type: "Manual",
+            },
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(errorText);
+          throw new Error("Failed to create open shift.");
+        }
+
+        return response.json();
+      }
+
+      toggleOpenShiftBtn.addEventListener("click", () => {
+        setNewShiftModalMode(newShiftModalMode === "shift" ? "open" : "shift");
       });
 
       closeEditShiftBtn.addEventListener("click", closeEditShiftDrawer);
@@ -979,6 +1119,9 @@
           newShiftEnd.value = dateToLocalInputValue(endDate);
           newShiftStatus.value = "Unconfirmed";
           newShiftNotes.value = "";
+          openShiftDate.value = getLocalDateInputValue(startDate);
+          openShiftStartTime.value = dateToTimeInputValue(startDate);
+          openShiftEndTime.value = dateToTimeInputValue(endDate);
 
           newShiftModal.showModal();
         }
@@ -1031,6 +1174,9 @@
 
           newShiftStart.value = dateToLocalInputValue(startDate);
           newShiftEnd.value = dateToLocalInputValue(endDate);
+          openShiftDate.value = getLocalDateInputValue(startDate);
+          openShiftStartTime.value = dateToTimeInputValue(startDate);
+          openShiftEndTime.value = dateToTimeInputValue(endDate);
           newShiftStatus.value = "Unconfirmed";
           newShiftNotes.value = "";
 
@@ -1084,9 +1230,48 @@
       cancelNewShiftBtn.addEventListener("click", () => {
         newShiftModal.close();
         resetDraftPreview();
+        setNewShiftModalMode("shift");
       });
 
       saveNewShiftBtn.addEventListener("click", async () => {
+        if (newShiftModalMode === "open") {
+          if (
+            !openShiftDate.value ||
+            !openShiftType.value ||
+            !openShiftStartTime.value ||
+            !openShiftEndTime.value ||
+            !openShiftDepartment.value
+          ) {
+            alert("Please fill out the required open shift fields.");
+            return;
+          }
+
+          saveNewShiftBtn.disabled = true;
+          saveNewShiftBtn.textContent = "Saving...";
+
+          try {
+            await createOpenShiftRecord();
+
+            newShiftModal.close();
+            resetDraftPreview();
+            setNewShiftModalMode("shift");
+
+            saveNewShiftBtn.disabled = false;
+            saveNewShiftBtn.textContent = "Save Shift";
+
+            await loadScheduleView();
+          } catch (error) {
+            console.error(error);
+
+            saveNewShiftBtn.disabled = false;
+            saveNewShiftBtn.textContent = "Save Open Shift";
+
+            alert("Something went wrong creating the open shift.");
+          }
+
+          return;
+        }
+
         if (
           !newShiftWorkstudy.value ||
           !newShiftStart.value ||
@@ -1104,6 +1289,7 @@
 
           newShiftModal.close();
           resetDraftPreview();
+          setNewShiftModalMode("shift");
 
           saveNewShiftBtn.disabled = false;
           saveNewShiftBtn.textContent = "Save Shift";
