@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="en" data-theme="green">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <!--font-->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap"
+      rel="stylesheet"
+    />
+    <!--tailwind-->
+    <link href="src/output.css" rel="stylesheet" />
+    <!--icons-->
+    <link
+      rel="stylesheet"
+      href="https://cdn-uicons.flaticon.com/4.0.0/uicons-regular-rounded/css/uicons-regular-rounded.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn-uicons.flaticon.com/4.0.0/uicons-bold-rounded/css/uicons-bold-rounded.css"
+    />
+    <!--chart-->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body class="h-screen overflow-hidden">
+    <!--main container-->
+    <div class="h-screen bg-neutral-100 flex overflow-hidden">
+      <!--sidebar-->
+      <div id="sidebar"></div>
+      <!--right-->
+      <div class="flex-1 flex flex-col overflow-hidden">
+        <!--header-->
+        <div id="header"></div>
+        <!--content-->
+        <div class="p-8 flex flex-col flex-1 overflow-hidden min-h-0">
+          <div
+            class="bg-base-100 shadow-md rounded-lg px-8 py-4 bg-linear-to-bl from-[#f3f520] to-[#4DB900] text-base-100 flex items-center justify-between"
+          >
+            <h1 class="uppercase font-black text-2xl">Inventory Dashboard</h1>
+          </div>
+
+          <div
+            class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 w-1/4 flex self-end"
+          >
+            <div>
+              <label class="label font-bold uppercase text-xs"
+                >Start Date</label
+              >
+              <input
+                id="usageStartDate"
+                type="date"
+                class="input input-bordered w-full"
+              />
+            </div>
+
+            <div>
+              <label class="label font-bold uppercase text-xs">End Date</label>
+              <input
+                id="usageEndDate"
+                type="date"
+                class="input input-bordered w-full"
+              />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div class="mt-6 bg-base-100 shadow-md rounded-lg flex flex-col">
+              <div
+                class="flex items-center justify-between px-8 py-4 border-b border-neutral-100"
+              >
+                <h1 class="text-md uppercase font-bold">Top Usage Items</h1>
+              </div>
+
+              <div id="topUsageList" class="flex flex-col"></div>
+
+              <div class="inset-shadow-sm px-8 py-4 flex gap-6">
+                <button
+                  id="viewAllUsageBtn"
+                  class="text-xs font-bold uppercase text-primary cursor-pointer"
+                >
+                  View All
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div
+            id="usageModal"
+            class="hidden fixed inset-0 z-[9999] bg-black/40 items-center justify-center p-6"
+          >
+            <div
+              class="bg-base-100 rounded-xl shadow-xl w-full max-w-3xl max-h-[80vh] flex flex-col"
+            >
+              <div
+                class="p-6 border-b border-neutral-200 flex justify-between items-center"
+              >
+                <h3 class="font-black text-2xl uppercase">All Item Usage</h3>
+                <button id="closeUsageModalBtn" class="btn btn-sm btn-circle">
+                  ✕
+                </button>
+              </div>
+
+              <div id="allUsageList" class="p-6 overflow-y-auto"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="src/components.js"></script>
+    <script>
+      const AIRTABLE_TOKEN =
+        "path5D1SLsZnikHyD.8e47f28d9b3b2913d1ebf07e9b1beb8c0903a82bb49266f19cb98fb4021b0129";
+      const BASE_ID = "appYqZMGk18beV4qI";
+      const USERS_TABLE = "Users";
+
+      const INVENTORY_AIRTABLE_TOKEN =
+        "patBXOO9qSPy0FJ3U.64d625dbfc50592451f7b40fbaed41287b09db0e51d26e5b23d0effcfcefb9fd";
+
+      const INVENTORY_BASE_ID = "apptUAgpH6UuhPwYy";
+      const SESSION_LINE_ITEMS_TABLE = "session_line_items";
+
+      const userId = localStorage.getItem("cpoUserId");
+
+      const usageStartDate = document.getElementById("usageStartDate");
+      const usageEndDate = document.getElementById("usageEndDate");
+      const topUsageList = document.getElementById("topUsageList");
+
+      const usageModal = document.getElementById("usageModal");
+      const viewAllUsageBtn = document.getElementById("viewAllUsageBtn");
+      const closeUsageModalBtn = document.getElementById("closeUsageModalBtn");
+      const allUsageList = document.getElementById("allUsageList");
+
+      let allCalculatedUsage = [];
+
+      function setDefaultUsageDates() {
+        const today = new Date();
+        const thirtyDaysAgo = new Date();
+
+        thirtyDaysAgo.setDate(today.getDate() - 30);
+
+        usageStartDate.value = thirtyDaysAgo.toISOString().split("T")[0];
+        usageEndDate.value = today.toISOString().split("T")[0];
+      }
+
+      async function fetchAllSessionLineItemsThroughEndDate(endDate) {
+        let records = [];
+        let offset = null;
+
+        const formula = encodeURIComponent(
+          `IS_BEFORE({session_date}, DATEADD("${endDate}", 1, 'days'))`,
+        );
+
+        do {
+          let url = `https://api.airtable.com/v0/${INVENTORY_BASE_ID}/${encodeURIComponent(
+            SESSION_LINE_ITEMS_TABLE,
+          )}?filterByFormula=${formula}&sort%5B0%5D%5Bfield%5D=session_date&sort%5B0%5D%5Bdirection%5D=asc`;
+
+          if (offset) {
+            url += `&offset=${offset}`;
+          }
+
+          const response = await fetch(url, {
+            headers: {
+              Authorization: `Bearer ${INVENTORY_AIRTABLE_TOKEN}`,
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch session line items");
+          }
+
+          const data = await response.json();
+
+          records = records.concat(data.records);
+          offset = data.offset;
+        } while (offset);
+
+        return records;
+      }
+
+      function calculateUsageByItem(records, startDate, endDate) {
+        const grouped = {};
+
+        records.forEach((record) => {
+          const fields = record.fields;
+
+          const itemKey =
+            Array.isArray(fields.item_name) && fields.item_name.length > 0
+              ? fields.item_name[0]
+              : fields.item_name_friendly || "Unknown Item";
+
+          if (!grouped[itemKey]) {
+            grouped[itemKey] = {
+              itemName: fields.item_name_friendly || "Unknown Item",
+              records: [],
+            };
+          }
+
+          grouped[itemKey].records.push({
+            date: fields.session_date,
+            total: Number(fields.total_q || 0),
+          });
+        });
+
+        const usageResults = [];
+
+        Object.values(grouped).forEach((item) => {
+          item.records.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+          let usage = 0;
+
+          for (let i = 1; i < item.records.length; i++) {
+            const previous = item.records[i - 1];
+            const current = item.records[i];
+
+            const currentDate = current.date;
+
+            const isWithinRange =
+              currentDate >= startDate && currentDate <= endDate;
+            const quantityWentDown = current.total < previous.total;
+
+            if (isWithinRange && quantityWentDown) {
+              usage += previous.total - current.total;
+            }
+          }
+
+          usageResults.push({
+            itemName: item.itemName,
+            usage,
+          });
+        });
+
+        return usageResults.sort((a, b) => b.usage - a.usage);
+      }
+
+      function renderTopUsageList(results) {
+        const topThree = results.slice(0, 3);
+
+        if (topThree.length === 0) {
+          topUsageList.innerHTML = `
+      <p class="uppercase text-xs opacity-60">
+        No usage found for this date range.
+      </p>
+    `;
+          return;
+        }
+
+        topUsageList.innerHTML = topThree
+          .map(
+            (item) => `
+      <div class="px-8 py-4 flex items-center gap-8">
+        <span class="rounded-full bg-primary/10 size-10 flex items-center justify-center">
+          <i class="fi fi-br-chart-line-up pt-1"></i>
+        </span>
+
+        <div class="flex-1">
+          <h1 class="text-sm uppercase font-bold">
+            ${item.itemName}
+          </h1>
+
+          <p class="text-xs uppercase opacity-60">
+            Total Usage
+          </p>
+        </div>
+
+        <span class="font-black text-lg">
+          ${item.usage}
+        </span>
+      </div>
+    `,
+          )
+          .join("");
+      }
+
+      function renderAllUsageList(results) {
+        if (results.length === 0) {
+          allUsageList.innerHTML = `
+      <p class="uppercase text-xs opacity-60">
+        No usage found for this date range.
+      </p>
+    `;
+          return;
+        }
+
+        allUsageList.innerHTML = results
+          .map(
+            (item) => `
+      <div class="px-6 py-3 flex items-center border-b border-neutral-100">
+        <div class="flex-1">
+          <h1 class="text-sm uppercase font-bold">
+            ${item.itemName}
+          </h1>
+        </div>
+
+        <span class="font-black">
+          ${item.usage}
+        </span>
+      </div>
+    `,
+          )
+          .join("");
+      }
+
+      async function loadUsageCard() {
+        const startDate = usageStartDate.value;
+        const endDate = usageEndDate.value;
+
+        if (!startDate || !endDate) return;
+
+        topUsageList.innerHTML = `
+    <p class="uppercase text-xs opacity-60">
+      Loading usage...
+    </p>
+  `;
+
+        try {
+          const records = await fetchAllSessionLineItemsThroughEndDate(endDate);
+
+          allCalculatedUsage = calculateUsageByItem(
+            records,
+            startDate,
+            endDate,
+          );
+
+          renderTopUsageList(allCalculatedUsage);
+          renderAllUsageList(allCalculatedUsage);
+        } catch (error) {
+          console.error(error);
+
+          topUsageList.innerHTML = `
+      <p class="uppercase text-xs text-error font-bold">
+        Something went wrong loading usage.
+      </p>
+    `;
+        }
+      }
+
+      function openUsageModal() {
+        usageModal.classList.remove("hidden");
+        usageModal.classList.add("flex");
+      }
+
+      function closeUsageModal() {
+        usageModal.classList.add("hidden");
+        usageModal.classList.remove("flex");
+      }
+
+      setDefaultUsageDates();
+      loadUsageCard();
+
+      usageStartDate.addEventListener("change", loadUsageCard);
+      usageEndDate.addEventListener("change", loadUsageCard);
+
+      viewAllUsageBtn.addEventListener("click", openUsageModal);
+      closeUsageModalBtn.addEventListener("click", closeUsageModal);
+
+      usageModal.addEventListener("click", (event) => {
+        if (event.target === usageModal) {
+          closeUsageModal();
+        }
+      });
+
+      function setActiveNav() {
+        const currentPage = window.location.pathname.split("/").pop();
+        const links = document.querySelectorAll("[data-page]");
+
+        links.forEach((link) => {
+          if (link.dataset.page === currentPage) {
+            link.classList.add("navSubActive");
+
+            const details = link.closest("details");
+            if (details) details.open = true;
+          }
+        });
+      }
+
+      async function fetchUser() {
+        if (!userId) {
+          window.location.href = "auth.html";
+          return;
+        }
+
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(
+          USERS_TABLE,
+        )}/${userId}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch user");
+        }
+
+        const data = await response.json();
+        const userFields = data.fields;
+
+        if (userFields.role === "Student") {
+          window.location.href = "student-portal.html";
+          return;
+        }
+
+        return userFields;
+      }
+
+      async function loadUserHeader() {
+        const avatarEl = document.getElementById("userAvatar");
+        const nameEl = document.getElementById("userName");
+        const roleEl = document.getElementById("userRole");
+        const displayNameSpan = document.getElementById("display_name");
+
+        try {
+          const user = await fetchUser();
+          if (!user) return;
+
+          if (avatarEl) {
+            avatarEl.src =
+              user.avatar_url ||
+              "https://img.daisyui.com/images/profile/demo/yellingcat@192.webp";
+          }
+
+          if (nameEl) {
+            nameEl.textContent = user.display_name || "User";
+          }
+
+          if (displayNameSpan) {
+            displayNameSpan.textContent = user.display_name || "User";
+          }
+
+          if (roleEl) {
+            if (user.role && user.role.length > 0) {
+              roleEl.textContent = "Loading...";
+              await loadRoleName(user.role[0]);
+            } else {
+              roleEl.textContent = "Standard";
+            }
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      async function loadRoleName(roleRecordId) {
+        const roleEl = document.getElementById("userRole");
+
+        const url = `https://api.airtable.com/v0/${BASE_ID}/Roles/${roleRecordId}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          },
+        });
+
+        if (!response.ok) {
+          if (roleEl) roleEl.textContent = "Role";
+          return;
+        }
+
+        const data = await response.json();
+
+        if (roleEl) {
+          roleEl.textContent = data.fields.name || "Role";
+        }
+      }
+
+      loadComponent("sidebar", "components/sidebar.html", () => {
+        setActiveNav();
+      });
+
+      loadComponent("header", "components/header.html", () => {
+        loadUserHeader();
+
+        const logoutBtn = document.getElementById("logoutBtn");
+
+        if (logoutBtn) {
+          logoutBtn.addEventListener("click", () => {
+            localStorage.removeItem("cpoUserId");
+            localStorage.removeItem("cpoUserEmail");
+            localStorage.removeItem("cpoDisplayName");
+            window.location.href = "auth.html";
+          });
+        }
+      });
+    </script>
+  </body>
+</html>
